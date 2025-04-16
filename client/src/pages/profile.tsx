@@ -103,10 +103,31 @@ export default function Profile() {
                     </AvatarFallback>
                   </Avatar>
                   
+                  <input
+                    type="file"
+                    id="avatar-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        // Handle file upload here
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                          setProfileData(prev => ({
+                            ...prev,
+                            avatarUrl: e.target?.result as string
+                          }));
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
                   <Button 
                     variant="outline" 
                     size="sm" 
                     className="absolute bottom-0 right-0 rounded-full shadow-md"
+                    onClick={() => document.getElementById('avatar-upload')?.click()}
                   >
                     Edit
                   </Button>

@@ -46,12 +46,33 @@ export default function Settings() {
     });
   };
 
-  const handleSaveNotifications = () => {
-    // In a real app, this would save the notification settings to user preferences
-    toast({
-      title: "Notification settings saved",
-      description: "Your notification preferences have been updated.",
-    });
+  const handleSaveNotifications = async () => {
+    try {
+      // Request notification permission if not granted
+      if (settings.pushNotifications) {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          toast({
+            title: "Notification Permission Required",
+            description: "Please enable notifications in your browser settings.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      // Save settings
+      toast({
+        title: "Notification settings saved",
+        description: "Your notification preferences have been updated.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error saving settings",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleSaveRegional = () => {
@@ -286,11 +307,11 @@ export default function Settings() {
                       <SelectValue placeholder="Select a time zone" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="Asia/Kolkata">IST (Indian Standard Time)</SelectItem>
                       <SelectItem value="UTC">UTC (Coordinated Universal Time)</SelectItem>
-                      <SelectItem value="EST">EST (Eastern Standard Time)</SelectItem>
-                      <SelectItem value="CST">CST (Central Standard Time)</SelectItem>
-                      <SelectItem value="MST">MST (Mountain Standard Time)</SelectItem>
-                      <SelectItem value="PST">PST (Pacific Standard Time)</SelectItem>
+                      <SelectItem value="Asia/Colombo">Sri Lanka Time</SelectItem>
+                      <SelectItem value="Asia/Dhaka">Bangladesh Time</SelectItem>
+                      <SelectItem value="Asia/Dubai">Gulf Time</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
