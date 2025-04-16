@@ -3,7 +3,8 @@ import { cn } from "@/lib/utils";
 import { 
   Home, Clock, Clipboard, CalendarDays, 
   LayoutDashboard, Briefcase, Users, BarChart3, 
-  CheckSquare, Settings, LogOut, Moon, Sun
+  CheckSquare, Settings, LogOut, Moon, Sun,
+  User
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -162,6 +163,12 @@ export function Sidebar({ isSidebarOpen, closeSidebar }: SidebarProps) {
           
           {/* Common Links */}
           <div className="space-y-1">
+            <SidebarLink 
+              href="/profile" 
+              icon={<User size={20} />} 
+              title="Profile" 
+              isActive={location === "/profile"}
+            />
             <SidebarLink 
               href="/settings" 
               icon={<Settings size={20} />} 

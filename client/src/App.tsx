@@ -11,6 +11,10 @@ import Tasks from "@/pages/tasks";
 import Projects from "@/pages/projects";
 import Team from "@/pages/team";
 import Reports from "@/pages/reports";
+import Profile from "@/pages/profile";
+import Settings from "@/pages/settings";
+import LeaveRequests from "@/pages/leave-requests";
+import LeaveApprovals from "@/pages/leave-approvals";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -74,6 +78,40 @@ function Router() {
         allowedRoles={["manager", "admin"]}
         component={() => (
           <Reports />
+        )}
+      />
+      
+      {/* Leave Management */}
+      <ProtectedRoute
+        path="/leave-requests"
+        allowedRoles={["employee", "manager", "admin"]}
+        component={() => (
+          <LeaveRequests />
+        )}
+      />
+      
+      <ProtectedRoute
+        path="/leave-approvals"
+        allowedRoles={["manager", "admin"]}
+        component={() => (
+          <LeaveApprovals />
+        )}
+      />
+      
+      {/* Common Routes */}
+      <ProtectedRoute
+        path="/profile"
+        allowedRoles={["employee", "manager", "admin"]}
+        component={() => (
+          <Profile />
+        )}
+      />
+      
+      <ProtectedRoute
+        path="/settings"
+        allowedRoles={["employee", "manager", "admin"]}
+        component={() => (
+          <Settings />
         )}
       />
       
