@@ -325,9 +325,7 @@ export default function LeaveRequests() {
           <p className="text-muted-foreground mb-4">
             You haven't submitted any leave requests yet.
           </p>
-          <DialogTrigger asChild>
-            <Button>Request Leave</Button>
-          </DialogTrigger>
+          <Button onClick={() => setOpen(true)}>Request Leave</Button>
         </div>
       )}
     </DashboardShell>
