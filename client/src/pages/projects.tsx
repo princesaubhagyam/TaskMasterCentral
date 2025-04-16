@@ -28,6 +28,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/status-badge";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Projects() {
   const { toast } = useToast();

@@ -18,7 +18,12 @@ export function useProjects() {
   // Create project mutation
   const createProjectMutation = useMutation({
     mutationFn: async (projectData: Omit<Project, "id">) => {
-      const res = await apiRequest("POST", "/api/projects", projectData);
+      // Ensure deadline is properly formatted as a Date object
+      const formattedData = {
+        ...projectData,
+        deadline: projectData.deadline ? new Date(projectData.deadline) : null
+      };
+      const res = await apiRequest("POST", "/api/projects", formattedData);
       return await res.json();
     },
     onSuccess: () => {
@@ -39,7 +44,12 @@ export function useProjects() {
   // Update project mutation
   const updateProjectMutation = useMutation({
     mutationFn: async ({ id, ...data }: { id: number; [key: string]: any }) => {
-      const res = await apiRequest("PUT", `/api/projects/${id}`, data);
+      // Ensure deadline is properly formatted as a Date object if present
+      const formattedData = {
+        ...data,
+        deadline: data.deadline ? new Date(data.deadline) : null
+      };
+      const res = await apiRequest("PUT", `/api/projects/${id}`, formattedData);
       return await res.json();
     },
     onSuccess: () => {
