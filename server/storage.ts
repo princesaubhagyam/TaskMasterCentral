@@ -41,8 +41,11 @@ export interface IStorage {
   createTimeEntry(timeEntry: InsertTimeEntry): Promise<TimeEntry>;
   updateTimeEntry(id: number, timeEntry: Partial<TimeEntry>): Promise<TimeEntry | undefined>;
   
+  // Database setup
+  setupDatabase?(): Promise<void>;
+  
   // Session storage
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using any to avoid type issues with express-session
 }
 
 // In-memory implementation of the storage interface
@@ -52,7 +55,7 @@ export class MemStorage implements IStorage {
   private tasks: Map<number, Task>;
   private timeEntries: Map<number, TimeEntry>;
   
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using any to avoid type issues with express-session
   
   // Auto-increment IDs
   private userId: number;
@@ -287,4 +290,8 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Import the DatabaseStorage implementation
+import { DatabaseStorage } from './database-storage';
+
+// Use the database storage implementation instead of memory storage
+export const storage = new DatabaseStorage();
