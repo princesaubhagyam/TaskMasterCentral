@@ -23,7 +23,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -65,7 +64,7 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
   const { createTask } = useTasks();
   const { projects } = useProjects();
   const { user } = useAuth();
-  
+
   const { data: employees = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
     enabled: user?.role !== "employee", // Only fetch employees if user is not an employee
@@ -99,7 +98,7 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
         dueDate: values.dueDate || null,
         status: "not_started",
       });
-      
+
       form.reset();
       setOpen(false);
     } catch (error) {
@@ -114,12 +113,12 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
           <DialogDescription>
-            {user?.role === "employee" 
-              ? "Create a new task for yourself." 
+            {user?.role === "employee"
+              ? "Create a new task for yourself."
               : "Add a new task and assign it to a team member."}
           </DialogDescription>
         </DialogHeader>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -135,7 +134,7 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="description"
@@ -143,17 +142,17 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Enter task description" 
-                      className="resize-none h-20" 
-                      {...field} 
+                    <Textarea
+                      placeholder="Enter task description"
+                      className="resize-none h-20"
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -161,8 +160,8 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Project (Optional)</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -171,9 +170,9 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {projects.map(project => (
-                          <SelectItem 
-                            key={project.id} 
+                        {projects.map((project) => (
+                          <SelectItem
+                            key={project.id}
                             value={project.id.toString()}
                           >
                             {project.name}
@@ -185,16 +184,16 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
                   </FormItem>
                 )}
               />
-              
-{user?.role !== "employee" ? (
+
+              {user?.role !== "employee" ? (
                 <FormField
                   control={form.control}
                   name="assigneeId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Assignee</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -204,10 +203,10 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
                         </FormControl>
                         <SelectContent>
                           {employees
-                            .filter(employee => employee.role === "employee")
-                            .map(employee => (
-                              <SelectItem 
-                                key={employee.id} 
+                            .filter((employee) => employee.role === "employee")
+                            .map((employee) => (
+                              <SelectItem
+                                key={employee.id}
                                 value={employee.id.toString()}
                               >
                                 {employee.name}
@@ -234,7 +233,7 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
                 />
               )}
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -242,8 +241,8 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Priority</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -262,7 +261,7 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="dueDate"
@@ -299,7 +298,7 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
                 )}
               />
             </div>
-            
+
             <DialogFooter>
               <Button
                 type="button"
