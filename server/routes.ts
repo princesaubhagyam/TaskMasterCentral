@@ -6,7 +6,9 @@ import {
   insertTaskSchema, 
   insertProjectSchema, 
   insertTimeEntrySchema,
-  timeEntries
+  timeEntries,
+  Task,
+  TimeEntry
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -100,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const projects = await storage.getProjectsByManager(req.user.id);
         const projectIds = projects.map(p => p.id);
         
-        let managerTasks = [];
+        let managerTasks: Task[] = [];
         for (const projectId of projectIds) {
           const tasks = await storage.getTasksByProject(projectId);
           managerTasks = [...managerTasks, ...tasks];
@@ -218,8 +220,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Get time entries for these assignees
-        let managerTimeEntries = [];
-        for (const assigneeId of assigneeIds) {
+        let managerTimeEntries: TimeEntry[] = [];
+        // Convert Set to Array for iteration
+        for (const assigneeId of Array.from(assigneeIds)) {
           const entries = await storage.getTimeEntriesByUser(assigneeId);
           managerTimeEntries = [...managerTimeEntries, ...entries];
         }

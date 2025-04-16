@@ -64,10 +64,15 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
   const [open, setOpen] = useState(false);
   const { createTask } = useTasks();
   const { projects } = useProjects();
+  const { user } = useAuth();
   
   const { data: employees = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
+    enabled: user?.role !== "employee", // Only fetch employees if user is not an employee
   });
+
+  // Set default assignee based on user role
+  const defaultAssigneeId = user?.role === "employee" ? user.id.toString() : "";
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
@@ -75,7 +80,7 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
       title: "",
       description: "",
       projectId: undefined,
-      assigneeId: "",
+      assigneeId: defaultAssigneeId, // Default to current user if employee
       priority: "medium",
       dueDate: undefined,
     },
@@ -88,10 +93,10 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
       await createTask({
         title: values.title,
         description: values.description || "",
-        projectId: values.projectId ? parseInt(values.projectId) : undefined,
+        projectId: values.projectId ? parseInt(values.projectId) : null,
         assigneeId: parseInt(values.assigneeId),
         priority: values.priority,
-        dueDate: values.dueDate,
+        dueDate: values.dueDate || null,
         status: "not_started",
       });
       
@@ -109,7 +114,9 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
           <DialogDescription>
-            Add a new task and assign it to a team member.
+            {user?.role === "employee" 
+              ? "Create a new task for yourself." 
+              : "Add a new task and assign it to a team member."}
           </DialogDescription>
         </DialogHeader>
         
@@ -179,38 +186,53 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
                 )}
               />
               
-              <FormField
-                control={form.control}
-                name="assigneeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Assignee</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
+{user?.role !== "employee" ? (
+                <FormField
+                  control={form.control}
+                  name="assigneeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assignee</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Assign to" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {employees
+                            .filter(employee => employee.role === "employee")
+                            .map(employee => (
+                              <SelectItem 
+                                key={employee.id} 
+                                value={employee.id.toString()}
+                              >
+                                {employee.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                // Hidden field for employee - they can only assign to themselves
+                <FormField
+                  control={form.control}
+                  name="assigneeId"
+                  render={({ field }) => (
+                    <FormItem className="hidden">
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Assign to" />
-                        </SelectTrigger>
+                        <Input type="hidden" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        {employees
-                          .filter(employee => employee.role === "employee")
-                          .map(employee => (
-                            <SelectItem 
-                              key={employee.id} 
-                              value={employee.id.toString()}
-                            >
-                              {employee.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
