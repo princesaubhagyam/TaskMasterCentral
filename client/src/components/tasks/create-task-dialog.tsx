@@ -95,7 +95,7 @@ export function CreateTaskDialog({ children }: CreateTaskDialogProps) {
         projectId: values.projectId ? parseInt(values.projectId) : null,
         assigneeId: parseInt(values.assigneeId),
         priority: values.priority,
-        dueDate: values.dueDate || null,
+        dueDate: values.dueDate ? new Date(values.dueDate) : null, // Convert dueDate to Date object
         status: "not_started",
       });
 

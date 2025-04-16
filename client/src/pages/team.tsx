@@ -275,7 +275,7 @@ export default function Team() {
                     },
                     {
                       header: "Hours",
-                      accessor: (entry) => entry.totalHours !== undefined ? entry.totalHours.toFixed(2) : "-",
+                      accessor: (entry) => entry.totalHours ? entry.totalHours.toFixed(2) : "-",
                     },
                     {
                       header: "Status",

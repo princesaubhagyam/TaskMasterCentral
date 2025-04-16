@@ -62,9 +62,10 @@ export default function LeaveRequests() {
   const onSubmit = async (values: LeaveRequestFormValues) => {
     await createLeaveRequestMutation.mutateAsync({
       type: values.type,
-      startDate: values.startDate,
-      endDate: values.endDate,
+      startDate: new Date(values.startDate),
+      endDate: new Date(values.endDate),
       reason: values.reason,
+      userId: user?.id,
     });
     setOpen(false);
     form.reset();
