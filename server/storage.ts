@@ -2,7 +2,8 @@ import {
   User, InsertUser, 
   Project, InsertProject, 
   Task, InsertTask, 
-  TimeEntry, InsertTimeEntry 
+  TimeEntry, InsertTimeEntry,
+  LeaveRequest, InsertLeaveRequest
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -41,6 +42,15 @@ export interface IStorage {
   createTimeEntry(timeEntry: InsertTimeEntry): Promise<TimeEntry>;
   updateTimeEntry(id: number, timeEntry: Partial<TimeEntry>): Promise<TimeEntry | undefined>;
   
+  // Leave request operations
+  getLeaveRequest(id: number): Promise<LeaveRequest | undefined>;
+  getLeaveRequests(): Promise<LeaveRequest[]>;
+  getLeaveRequestsByUser(userId: number): Promise<LeaveRequest[]>;
+  getLeaveRequestsByStatus(status: string): Promise<LeaveRequest[]>;
+  getPendingLeaveRequests(): Promise<LeaveRequest[]>;
+  createLeaveRequest(leaveRequest: InsertLeaveRequest): Promise<LeaveRequest>;
+  updateLeaveRequest(id: number, leaveRequest: Partial<LeaveRequest>): Promise<LeaveRequest | undefined>;
+  
   // Database setup
   setupDatabase?(): Promise<void>;
   
@@ -54,6 +64,7 @@ export class MemStorage implements IStorage {
   private projects: Map<number, Project>;
   private tasks: Map<number, Task>;
   private timeEntries: Map<number, TimeEntry>;
+  private leaveRequests: Map<number, LeaveRequest>;
   
   sessionStore: any; // Using any to avoid type issues with express-session
   
@@ -62,17 +73,20 @@ export class MemStorage implements IStorage {
   private projectId: number;
   private taskId: number;
   private timeEntryId: number;
+  private leaveRequestId: number;
   
   constructor() {
     this.users = new Map();
     this.projects = new Map();
     this.tasks = new Map();
     this.timeEntries = new Map();
+    this.leaveRequests = new Map();
     
     this.userId = 1;
     this.projectId = 1;
     this.taskId = 1;
     this.timeEntryId = 1;
+    this.leaveRequestId = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
@@ -287,6 +301,54 @@ export class MemStorage implements IStorage {
     const updatedTimeEntry = { ...existingTimeEntry, ...timeEntry };
     this.timeEntries.set(id, updatedTimeEntry);
     return updatedTimeEntry;
+  }
+
+  // Leave request operations
+  async getLeaveRequest(id: number): Promise<LeaveRequest | undefined> {
+    return this.leaveRequests.get(id);
+  }
+  
+  async getLeaveRequests(): Promise<LeaveRequest[]> {
+    return Array.from(this.leaveRequests.values());
+  }
+  
+  async getLeaveRequestsByUser(userId: number): Promise<LeaveRequest[]> {
+    return Array.from(this.leaveRequests.values())
+      .filter((request) => request.userId === userId)
+      .sort((a, b) => new Date(b.requestedOn).getTime() - new Date(a.requestedOn).getTime());
+  }
+  
+  async getLeaveRequestsByStatus(status: string): Promise<LeaveRequest[]> {
+    return Array.from(this.leaveRequests.values())
+      .filter((request) => request.status === status)
+      .sort((a, b) => new Date(b.requestedOn).getTime() - new Date(a.requestedOn).getTime());
+  }
+  
+  async getPendingLeaveRequests(): Promise<LeaveRequest[]> {
+    return this.getLeaveRequestsByStatus("pending");
+  }
+  
+  async createLeaveRequest(insertLeaveRequest: InsertLeaveRequest): Promise<LeaveRequest> {
+    const id = this.leaveRequestId++;
+    const leaveRequest: LeaveRequest = { 
+      ...insertLeaveRequest, 
+      id,
+      requestedOn: insertLeaveRequest.requestedOn || new Date(),
+      reviewedOn: null,
+      reviewerId: null,
+      comments: null,
+    };
+    this.leaveRequests.set(id, leaveRequest);
+    return leaveRequest;
+  }
+  
+  async updateLeaveRequest(id: number, leaveRequest: Partial<LeaveRequest>): Promise<LeaveRequest | undefined> {
+    const existingLeaveRequest = this.leaveRequests.get(id);
+    if (!existingLeaveRequest) return undefined;
+    
+    const updatedLeaveRequest = { ...existingLeaveRequest, ...leaveRequest };
+    this.leaveRequests.set(id, updatedLeaveRequest);
+    return updatedLeaveRequest;
   }
 }
 

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -84,6 +84,30 @@ export const insertTimeEntrySchema = createInsertSchema(timeEntries).pick({
   status: true,
 });
 
+// Leave Request Model
+export const leaveRequests = pgTable("leave_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  type: text("type").notNull(), // "annual", "sick", "unpaid", "bereavement", "maternity", "paternity"
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  reason: text("reason"),
+  status: text("status").default("pending"), // "pending", "approved", "rejected", "cancelled"
+  requestedOn: timestamp("requested_on").notNull().defaultNow(),
+  reviewedOn: timestamp("reviewed_on"),
+  reviewerId: integer("reviewer_id"),
+  comments: text("comments"),
+});
+
+export const insertLeaveRequestSchema = createInsertSchema(leaveRequests).pick({
+  userId: true,
+  type: true,
+  startDate: true,
+  endDate: true,
+  reason: true,
+  status: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -96,6 +120,9 @@ export type InsertTask = z.infer<typeof insertTaskSchema>;
 
 export type TimeEntry = typeof timeEntries.$inferSelect;
 export type InsertTimeEntry = z.infer<typeof insertTimeEntrySchema>;
+
+export type LeaveRequest = typeof leaveRequests.$inferSelect;
+export type InsertLeaveRequest = z.infer<typeof insertLeaveRequestSchema>;
 
 // Extended schemas for frontend validation
 export const loginSchema = z.object({
