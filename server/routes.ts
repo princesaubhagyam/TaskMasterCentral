@@ -119,15 +119,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/tasks", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    if (req.user?.role === "employee") {
-      return res.status(403).json({ message: "Employees cannot create tasks" });
-    }
     
     try {
       const taskData = insertTaskSchema.parse(req.body);
       
-      // If the task is associated with a project, check if the manager is authorized
-      if (taskData.projectId && req.user?.role === "manager") {
+      // Employee can only create tasks for themselves (self-assigned tasks)
+      if (req.user?.role === "employee") {
+        // Force assigneeId to be the employee's own ID
+        taskData.assigneeId = req.user.id;
+        
+        // Employees can't assign tasks to projects unless they're specified as part of the project
+        if (taskData.projectId) {
+          // Here we could check if the employee is part of the project team
+          // For now, we'll just allow it as we don't have a project-team relationship
+        }
+      } 
+      // Manager can only create tasks for their own projects
+      else if (req.user?.role === "manager" && taskData.projectId) {
         const project = await storage.getProject(taskData.projectId);
         if (!project || project.managerId !== req.user.id) {
           return res.status(403).json({ message: "Not authorized to add tasks to this project" });

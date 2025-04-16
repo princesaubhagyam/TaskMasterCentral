@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTasks } from "@/hooks/use-tasks";
 import { useProjects } from "@/hooks/use-projects";
+import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";

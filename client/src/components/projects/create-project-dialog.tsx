@@ -74,7 +74,7 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
       await createProject({
         name: values.name,
         description: values.description || "",
-        deadline: values.deadline,
+        deadline: values.deadline ? new Date(values.deadline) : null,
         status: values.status,
         managerId: 0, // This is set automatically by the server based on the logged-in user
       });
