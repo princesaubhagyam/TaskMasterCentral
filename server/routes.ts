@@ -6,9 +6,11 @@ import {
   insertTaskSchema, 
   insertProjectSchema, 
   insertTimeEntrySchema,
+  insertLeaveRequestSchema,
   timeEntries,
   Task,
-  TimeEntry
+  TimeEntry,
+  LeaveRequest
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -320,6 +322,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(users);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+  
+  // Leave Requests API
+  app.get("/api/leave-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // If user is an employee, get only their leave requests
+      if (req.user?.role === "employee") {
+        const leaveRequests = await storage.getLeaveRequestsByUser(req.user.id);
+        return res.json(leaveRequests);
+      }
+      
+      // Managers and admins can see all pending requests
+      if (req.user?.role === "manager" || req.user?.role === "admin") {
+        const pendingRequests = await storage.getPendingLeaveRequests();
+        return res.json(pendingRequests);
+      }
+      
+      // Default case should not be reached
+      res.status(403).json({ message: "Unauthorized" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch leave requests" });
+    }
+  });
+  
+  app.post("/api/leave-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const leaveRequestData = insertLeaveRequestSchema.parse(req.body);
+      
+      // User can only submit leave requests for themselves
+      const leaveRequest = await storage.createLeaveRequest({
+        ...leaveRequestData,
+        userId: req.user!.id,
+        status: "pending" // Always start with pending status
+      });
+      
+      res.status(201).json(leaveRequest);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid leave request data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create leave request" });
+    }
+  });
+  
+  app.put("/api/leave-requests/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const leaveRequestId = parseInt(req.params.id);
+    if (isNaN(leaveRequestId)) {
+      return res.status(400).json({ message: "Invalid leave request ID" });
+    }
+    
+    try {
+      const leaveRequest = await storage.getLeaveRequest(leaveRequestId);
+      if (!leaveRequest) {
+        return res.status(404).json({ message: "Leave request not found" });
+      }
+      
+      // Employees can only cancel their own pending leave requests
+      if (req.user?.role === "employee") {
+        if (leaveRequest.userId !== req.user.id) {
+          return res.status(403).json({ message: "Not authorized to update this leave request" });
+        }
+        
+        if (leaveRequest.status !== "pending") {
+          return res.status(400).json({ message: "Only pending leave requests can be canceled" });
+        }
+        
+        // Employee can only cancel their leave request
+        if (req.body.status !== "cancelled") {
+          return res.status(400).json({ message: "Employees can only cancel leave requests" });
+        }
+        
+        const updatedLeaveRequest = await storage.updateLeaveRequest(leaveRequestId, { 
+          status: "cancelled" 
+        });
+        return res.json(updatedLeaveRequest);
+      }
+      
+      // Managers and admins can approve or reject leave requests
+      if (req.user?.role === "manager" || req.user?.role === "admin") {
+        if (leaveRequest.status !== "pending") {
+          return res.status(400).json({ message: "Only pending leave requests can be processed" });
+        }
+        
+        if (req.body.status !== "approved" && req.body.status !== "rejected") {
+          return res.status(400).json({ message: "Status must be 'approved' or 'rejected'" });
+        }
+        
+        const updatedLeaveRequest = await storage.updateLeaveRequest(leaveRequestId, {
+          status: req.body.status,
+          reviewerId: req.user.id,
+          reviewedOn: new Date(),
+          comments: req.body.comments || null
+        });
+        return res.json(updatedLeaveRequest);
+      }
+      
+      res.status(403).json({ message: "Not authorized to update leave requests" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update leave request" });
+    }
+  });
+  
+  // For managers to see all leave requests
+  app.get("/api/leave-requests/all", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (req.user?.role !== "manager" && req.user?.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized to view all leave requests" });
+    }
+    
+    try {
+      const leaveRequests = await storage.getLeaveRequests();
+      res.json(leaveRequests);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch leave requests" });
     }
   });
   

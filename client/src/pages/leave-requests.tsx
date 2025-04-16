@@ -1,516 +1,335 @@
-import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useLeaveRequests } from "@/hooks/use-leave-requests";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format } from "date-fns";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Plus, Calendar as CalendarIcon2, Clock, Loader2 } from "lucide-react";
+import { Loader2, Calendar, ChevronsUpDown, X } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { format, differenceInCalendarDays, addDays } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
-// Mock data for leave requests
-const mockLeaveRequests = [
-  {
-    id: 1,
-    type: "annual",
-    startDate: new Date(2025, 3, 20),
-    endDate: new Date(2025, 3, 25),
-    reason: "Family vacation",
-    status: "approved",
-    requestedOn: new Date(2025, 3, 1),
-  },
-  {
-    id: 2,
-    type: "sick",
-    startDate: new Date(2025, 4, 5),
-    endDate: new Date(2025, 4, 6),
-    reason: "Doctor's appointment",
-    status: "pending",
-    requestedOn: new Date(2025, 4, 1),
-  },
-  {
-    id: 3,
-    type: "unpaid",
-    startDate: new Date(2025, 5, 10),
-    endDate: new Date(2025, 5, 15),
-    reason: "Personal matters",
-    status: "rejected",
-    requestedOn: new Date(2025, 4, 25),
-  },
-];
+const leaveRequestFormSchema = z.object({
+  type: z.string({
+    required_error: "Please select a leave type",
+  }),
+  startDate: z.date({
+    required_error: "Start date is required",
+  }),
+  endDate: z.date({
+    required_error: "End date is required",
+  }),
+  reason: z.string().optional(),
+}).refine(data => {
+  return data.endDate >= data.startDate;
+}, {
+  message: "End date cannot be before start date",
+  path: ["endDate"]
+});
+
+type LeaveRequestFormValues = z.infer<typeof leaveRequestFormSchema>;
 
 export default function LeaveRequests() {
-  const { toast } = useToast();
   const { user } = useAuth();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [leaveRequests, setLeaveRequests] = useState(mockLeaveRequests);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [leaveData, setLeaveData] = useState({
-    type: "annual",
-    startDate: new Date(),
-    endDate: new Date(),
-    reason: "",
+  const [open, setOpen] = useState(false);
+  const { 
+    leaveRequests,
+    isLoading,
+    createLeaveRequestMutation,
+    cancelLeaveRequestMutation,
+  } = useLeaveRequests();
+
+  const form = useForm<LeaveRequestFormValues>({
+    resolver: zodResolver(leaveRequestFormSchema),
+    defaultValues: {
+      type: "",
+      startDate: new Date(),
+      endDate: addDays(new Date(), 1),
+      reason: "",
+    },
   });
 
-  const handleStartDateSelect = (date: Date | undefined) => {
-    if (date) {
-      setLeaveData(prev => ({
-        ...prev,
-        startDate: date,
-        endDate: date > prev.endDate ? date : prev.endDate,
-      }));
-    }
-  };
-
-  const handleEndDateSelect = (date: Date | undefined) => {
-    if (date) {
-      setLeaveData(prev => ({
-        ...prev,
-        endDate: date,
-      }));
-    }
-  };
-
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real app, this would call an API to create a leave request
-      const newLeaveRequest = {
-        id: leaveRequests.length + 1,
-        ...leaveData,
-        status: "pending",
-        requestedOn: new Date(),
-      };
-      
-      setLeaveRequests(prev => [newLeaveRequest, ...prev]);
-      
-      toast({
-        title: "Leave request submitted",
-        description: "Your leave request has been submitted successfully.",
-      });
-      
-      setLeaveData({
-        type: "annual",
-        startDate: new Date(),
-        endDate: new Date(),
-        reason: "",
-      });
-      
-      setIsDialogOpen(false);
-    } catch (error) {
-      toast({
-        title: "Failed to submit leave request",
-        description: "An error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCancel = (id: number) => {
-    // In a real app, this would call an API to cancel the leave request
-    setLeaveRequests(prev => 
-      prev.map(req => 
-        req.id === id ? { ...req, status: "cancelled" } : req
-      )
-    );
-    
-    toast({
-      title: "Leave request cancelled",
-      description: "Your leave request has been cancelled.",
+  const onSubmit = async (values: LeaveRequestFormValues) => {
+    await createLeaveRequestMutation.mutateAsync({
+      type: values.type,
+      startDate: values.startDate,
+      endDate: values.endDate,
+      reason: values.reason,
     });
+    setOpen(false);
+    form.reset();
   };
 
-  const pendingRequests = leaveRequests.filter(req => req.status === "pending");
-  const approvedRequests = leaveRequests.filter(req => req.status === "approved");
-  const rejectedRequests = leaveRequests.filter(req => req.status === "rejected" || req.status === "cancelled");
+  const handleCancel = async (leaveRequestId: number) => {
+    if (confirm("Are you sure you want to cancel this leave request?")) {
+      await cancelLeaveRequestMutation.mutateAsync(leaveRequestId);
+    }
+  };
 
   const calculateDuration = (start: Date, end: Date) => {
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+    const days = differenceInCalendarDays(new Date(end), new Date(start)) + 1;
+    return days === 1 ? "1 day" : `${days} days`;
   };
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case "approved":
-        return "success";
       case "pending":
         return "outline";
+      case "approved":
+        return "success";
       case "rejected":
         return "destructive";
       case "cancelled":
         return "secondary";
       default:
-        return "outline";
-    }
-  };
-
-  const getLeaveTypeLabel = (type: string) => {
-    switch (type) {
-      case "annual":
-        return "Annual Leave";
-      case "sick":
-        return "Sick Leave";
-      case "unpaid":
-        return "Unpaid Leave";
-      case "bereavement":
-        return "Bereavement Leave";
-      case "maternity":
-        return "Maternity Leave";
-      case "paternity":
-        return "Paternity Leave";
-      default:
-        return type;
+        return "default";
     }
   };
 
   return (
     <DashboardShell title="Leave Requests">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight">Leave Management</h2>
-            <p className="text-muted-foreground">
-              View and manage your leave requests
-            </p>
-          </div>
-          
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                New Leave Request
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px]">
-              <DialogHeader>
-                <DialogTitle>New Leave Request</DialogTitle>
-                <DialogDescription>
-                  Submit a new leave request for approval.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="leave-type">Leave Type</Label>
-                  <Select
-                    value={leaveData.type}
-                    onValueChange={(value) => 
-                      setLeaveData(prev => ({ ...prev, type: value }))
-                    }
-                  >
-                    <SelectTrigger id="leave-type">
-                      <SelectValue placeholder="Select leave type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="annual">Annual Leave</SelectItem>
-                      <SelectItem value="sick">Sick Leave</SelectItem>
-                      <SelectItem value="unpaid">Unpaid Leave</SelectItem>
-                      <SelectItem value="bereavement">Bereavement Leave</SelectItem>
-                      <SelectItem value="maternity">Maternity Leave</SelectItem>
-                      <SelectItem value="paternity">Paternity Leave</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="start-date">Start Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="justify-start text-left font-normal"
-                          id="start-date"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {leaveData.startDate ? (
-                            format(leaveData.startDate, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={leaveData.startDate}
-                          onSelect={handleStartDateSelect}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  
-                  <div className="grid gap-2">
-                    <Label htmlFor="end-date">End Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="justify-start text-left font-normal"
-                          id="end-date"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {leaveData.endDate ? (
-                            format(leaveData.endDate, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={leaveData.endDate}
-                          onSelect={handleEndDateSelect}
-                          disabled={(date) => date < leaveData.startDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-                
-                <div className="grid gap-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="reason">Reason</Label>
-                    <span className="text-xs text-gray-500">
-                      Duration: {calculateDuration(leaveData.startDate, leaveData.endDate)} day(s)
-                    </span>
-                  </div>
-                  <Textarea
-                    id="reason"
-                    placeholder="Enter the reason for your leave request"
-                    value={leaveData.reason}
-                    onChange={(e) => 
-                      setLeaveData(prev => ({ ...prev, reason: e.target.value }))
-                    }
-                    rows={4}
-                  />
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    "Submit Request"
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Leave Requests</h1>
+          <p className="text-muted-foreground">
+            View your leave requests or submit new ones.
+          </p>
         </div>
-
-        <Tabs defaultValue="pending" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="pending">
-              Pending
-              <Badge variant="outline" className="ml-2">
-                {pendingRequests.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="approved">
-              Approved
-              <Badge variant="outline" className="ml-2">
-                {approvedRequests.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="rejected">
-              Rejected
-              <Badge variant="outline" className="ml-2">
-                {rejectedRequests.length}
-              </Badge>
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="pending" className="mt-6">
-            <div className="grid gap-4">
-              {pendingRequests.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center h-40">
-                    <CalendarIcon2 className="h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-center text-gray-500">
-                      No pending leave requests
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                pendingRequests.map((leave) => (
-                  <Card key={leave.id}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-center">
-                        <CardTitle className="text-xl">
-                          {getLeaveTypeLabel(leave.type)}
-                        </CardTitle>
-                        <Badge variant={getStatusBadgeVariant(leave.status)}>
-                          {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
-                        </Badge>
-                      </div>
-                      <CardDescription>
-                        {format(leave.requestedOn, "PPP")}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid gap-2">
-                        <div className="flex items-center gap-2">
-                          <CalendarIcon className="h-4 w-4 text-gray-400" />
-                          <span>
-                            {format(leave.startDate, "PPP")} - {format(leave.endDate, "PPP")}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-400" />
-                          <span>
-                            Duration: {calculateDuration(leave.startDate, leave.endDate)} day(s)
-                          </span>
-                        </div>
-                        <div className="mt-2">
-                          <p className="text-sm text-gray-700">{leave.reason}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="border-t pt-4 flex justify-end">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => handleCancel(leave.id)}
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>Request Leave</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Request Leave</DialogTitle>
+              <DialogDescription>
+                Fill out the form below to request time off.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Leave Type</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
                       >
-                        Cancel Request
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="approved" className="mt-6">
-            <div className="grid gap-4">
-              {approvedRequests.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center h-40">
-                    <CalendarIcon2 className="h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-center text-gray-500">
-                      No approved leave requests
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                approvedRequests.map((leave) => (
-                  <Card key={leave.id}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-center">
-                        <CardTitle className="text-xl">
-                          {getLeaveTypeLabel(leave.type)}
-                        </CardTitle>
-                        <Badge variant={getStatusBadgeVariant(leave.status)}>
-                          {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
-                        </Badge>
-                      </div>
-                      <CardDescription>
-                        {format(leave.requestedOn, "PPP")}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid gap-2">
-                        <div className="flex items-center gap-2">
-                          <CalendarIcon className="h-4 w-4 text-gray-400" />
-                          <span>
-                            {format(leave.startDate, "PPP")} - {format(leave.endDate, "PPP")}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-400" />
-                          <span>
-                            Duration: {calculateDuration(leave.startDate, leave.endDate)} day(s)
-                          </span>
-                        </div>
-                        <div className="mt-2">
-                          <p className="text-sm text-gray-700">{leave.reason}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="rejected" className="mt-6">
-            <div className="grid gap-4">
-              {rejectedRequests.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center h-40">
-                    <CalendarIcon2 className="h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-center text-gray-500">
-                      No rejected or cancelled leave requests
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                rejectedRequests.map((leave) => (
-                  <Card key={leave.id}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-center">
-                        <CardTitle className="text-xl">
-                          {getLeaveTypeLabel(leave.type)}
-                        </CardTitle>
-                        <Badge variant={getStatusBadgeVariant(leave.status)}>
-                          {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
-                        </Badge>
-                      </div>
-                      <CardDescription>
-                        {format(leave.requestedOn, "PPP")}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid gap-2">
-                        <div className="flex items-center gap-2">
-                          <CalendarIcon className="h-4 w-4 text-gray-400" />
-                          <span>
-                            {format(leave.startDate, "PPP")} - {format(leave.endDate, "PPP")}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-400" />
-                          <span>
-                            Duration: {calculateDuration(leave.startDate, leave.endDate)} day(s)
-                          </span>
-                        </div>
-                        <div className="mt-2">
-                          <p className="text-sm text-gray-700">{leave.reason}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select leave type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="annual">Annual Leave</SelectItem>
+                          <SelectItem value="sick">Sick Leave</SelectItem>
+                          <SelectItem value="unpaid">Unpaid Leave</SelectItem>
+                          <SelectItem value="bereavement">Bereavement Leave</SelectItem>
+                          <SelectItem value="maternity">Maternity Leave</SelectItem>
+                          <SelectItem value="paternity">Paternity Leave</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Start Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>End Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date < form.getValues("startDate")}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="reason"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Reason (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Please provide a reason for your leave request"
+                          className="resize-none"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button 
+                    type="submit" 
+                    disabled={createLeaveRequestMutation.isPending}
+                  >
+                    {createLeaveRequestMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Submit Request
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
+      
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : leaveRequests && leaveRequests.length > 0 ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {leaveRequests.map((request) => (
+            <Card key={request.id}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="capitalize">
+                      {request.type.replace("_", " ")} Leave
+                    </CardTitle>
+                    <CardDescription>
+                      {format(new Date(request.startDate), "PPP")} - {format(new Date(request.endDate), "PPP")}
+                    </CardDescription>
+                  </div>
+                  <Badge variant={getStatusBadgeVariant(request.status)} className="capitalize">
+                    {request.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium">Duration:</span>
+                    <span>{calculateDuration(request.startDate, request.endDate)}</span>
+                  </div>
+                  {request.reason && (
+                    <div>
+                      <span className="text-sm font-medium">Reason:</span>
+                      <p className="text-sm mt-1">{request.reason}</p>
+                    </div>
+                  )}
+                  {request.comments && (
+                    <div>
+                      <span className="text-sm font-medium">Comments:</span>
+                      <p className="text-sm mt-1">{request.comments}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+              {request.status === "pending" && (
+                <CardFooter>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => handleCancel(request.id)}
+                    disabled={cancelLeaveRequestMutation.isPending}
+                  >
+                    {cancelLeaveRequestMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Cancel Request
+                  </Button>
+                </CardFooter>
+              )}
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-64 text-center">
+          <h3 className="text-lg font-semibold mb-2">No leave requests found</h3>
+          <p className="text-muted-foreground mb-4">
+            You haven't submitted any leave requests yet.
+          </p>
+          <DialogTrigger asChild>
+            <Button>Request Leave</Button>
+          </DialogTrigger>
+        </div>
+      )}
     </DashboardShell>
   );
 }

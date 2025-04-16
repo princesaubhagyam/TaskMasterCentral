@@ -3,7 +3,8 @@ import {
   Project, InsertProject, 
   Task, InsertTask, 
   TimeEntry, InsertTimeEntry,
-  users, projects, tasks, timeEntries
+  LeaveRequest, InsertLeaveRequest,
+  users, projects, tasks, timeEntries, leaveRequests
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -259,5 +260,48 @@ export class DatabaseStorage implements IStorage {
       .where(eq(timeEntries.id, id))
       .returning();
     return updatedEntry;
+  }
+
+  // Leave request operations
+  async getLeaveRequest(id: number): Promise<LeaveRequest | undefined> {
+    const [request] = await db.select().from(leaveRequests).where(eq(leaveRequests.id, id));
+    return request;
+  }
+  
+  async getLeaveRequests(): Promise<LeaveRequest[]> {
+    return db.select().from(leaveRequests);
+  }
+  
+  async getLeaveRequestsByUser(userId: number): Promise<LeaveRequest[]> {
+    return db.select().from(leaveRequests)
+      .where(eq(leaveRequests.userId, userId))
+      .orderBy(leaveRequests.requestedOn);
+  }
+  
+  async getLeaveRequestsByStatus(status: string): Promise<LeaveRequest[]> {
+    return db.select().from(leaveRequests)
+      .where(eq(leaveRequests.status, status))
+      .orderBy(leaveRequests.requestedOn);
+  }
+  
+  async getPendingLeaveRequests(): Promise<LeaveRequest[]> {
+    return this.getLeaveRequestsByStatus("pending");
+  }
+  
+  async createLeaveRequest(insertLeaveRequest: InsertLeaveRequest): Promise<LeaveRequest> {
+    const [request] = await db.insert(leaveRequests).values({
+      ...insertLeaveRequest,
+      requestedOn: new Date()
+    }).returning();
+    return request;
+  }
+  
+  async updateLeaveRequest(id: number, leaveRequest: Partial<LeaveRequest>): Promise<LeaveRequest | undefined> {
+    const [updatedRequest] = await db
+      .update(leaveRequests)
+      .set(leaveRequest)
+      .where(eq(leaveRequests.id, id))
+      .returning();
+    return updatedRequest;
   }
 }

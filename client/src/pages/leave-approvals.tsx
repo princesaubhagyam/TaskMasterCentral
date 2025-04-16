@@ -1,552 +1,355 @@
-import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useLeaveRequests } from "@/hooks/use-leave-requests";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, Clock, CheckCircle, XCircle, MessageSquare, Search, Filter } from "lucide-react";
-
-// Mock data for leave requests that need approval
-const mockPendingRequests = [
-  {
-    id: 1,
-    type: "annual",
-    startDate: new Date(2025, 3, 15),
-    endDate: new Date(2025, 3, 18),
-    reason: "Family wedding",
-    status: "pending",
-    requestedOn: new Date(2025, 3, 1),
-    user: {
-      id: 3,
-      name: "John Smith",
-      role: "employee",
-      avatar: null,
-      department: "Engineering",
-    },
-  },
-  {
-    id: 2,
-    type: "sick",
-    startDate: new Date(2025, 4, 3),
-    endDate: new Date(2025, 4, 3),
-    reason: "Doctor's appointment",
-    status: "pending",
-    requestedOn: new Date(2025, 3, 29),
-    user: {
-      id: 4,
-      name: "Emily Johnson",
-      role: "employee",
-      avatar: null,
-      department: "Marketing",
-    },
-  },
-  {
-    id: 3,
-    type: "unpaid",
-    startDate: new Date(2025, 5, 1),
-    endDate: new Date(2025, 5, 5),
-    reason: "Personal matters",
-    status: "pending",
-    requestedOn: new Date(2025, 4, 20),
-    user: {
-      id: 5,
-      name: "David Brown",
-      role: "employee",
-      avatar: null,
-      department: "Finance",
-    },
-  },
-];
-
-const mockReviewedRequests = [
-  {
-    id: 4,
-    type: "annual",
-    startDate: new Date(2025, 2, 10),
-    endDate: new Date(2025, 2, 15),
-    reason: "Vacation",
-    status: "approved",
-    requestedOn: new Date(2025, 1, 25),
-    reviewedOn: new Date(2025, 1, 27),
-    comments: "Approved as requested.",
-    user: {
-      id: 6,
-      name: "Sarah Wilson",
-      role: "employee",
-      avatar: null,
-      department: "Customer Support",
-    },
-  },
-  {
-    id: 5,
-    type: "bereavement",
-    startDate: new Date(2025, 3, 5),
-    endDate: new Date(2025, 3, 9),
-    reason: "Family funeral",
-    status: "approved",
-    requestedOn: new Date(2025, 3, 4),
-    reviewedOn: new Date(2025, 3, 4),
-    comments: "Condolences. Take all the time you need.",
-    user: {
-      id: 3,
-      name: "John Smith",
-      role: "employee",
-      avatar: null,
-      department: "Engineering",
-    },
-  },
-  {
-    id: 6,
-    type: "annual",
-    startDate: new Date(2025, 4, 25),
-    endDate: new Date(2025, 5, 10),
-    reason: "Summer vacation",
-    status: "rejected",
-    requestedOn: new Date(2025, 3, 15),
-    reviewedOn: new Date(2025, 3, 18),
-    comments: "Cannot approve due to project deadline. Please reschedule.",
-    user: {
-      id: 4,
-      name: "Emily Johnson",
-      role: "employee",
-      avatar: null,
-      department: "Marketing",
-    },
-  },
-];
+import { Loader2, CheckCircle, XCircle, Calendar, MoreHorizontal } from "lucide-react";
+import { format, differenceInCalendarDays } from "date-fns";
+import { LeaveRequest } from "@shared/schema";
+import { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function LeaveApprovals() {
-  const { toast } = useToast();
-  const [pendingRequests, setPendingRequests] = useState(mockPendingRequests);
-  const [reviewedRequests, setReviewedRequests] = useState(mockReviewedRequests);
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [approvalComments, setApprovalComments] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterDepartment, setFilterDepartment] = useState("all");
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("pending");
+  const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [comments, setComments] = useState("");
   
-  const handleViewDetails = (request: any) => {
-    setSelectedRequest(request);
-    setIsDetailsOpen(true);
-  };
+  const {
+    allLeaveRequests,
+    isLoading,
+    error,
+    processLeaveRequestMutation,
+  } = useLeaveRequests();
 
-  const handleApprove = () => {
-    if (!selectedRequest) return;
-    
-    // In a real app, this would call an API to approve the leave request
-    const updatedRequest = {
-      ...selectedRequest,
-      status: "approved",
-      reviewedOn: new Date(),
-      comments: approvalComments,
-    };
-    
-    setPendingRequests(prev => prev.filter(req => req.id !== selectedRequest.id));
-    setReviewedRequests(prev => [updatedRequest, ...prev]);
-    
-    toast({
-      title: "Leave request approved",
-      description: "The leave request has been approved successfully.",
-    });
-    
-    setIsDetailsOpen(false);
-    setApprovalComments("");
-  };
-
-  const handleReject = () => {
-    if (!selectedRequest) return;
-    
-    // In a real app, this would call an API to reject the leave request
-    const updatedRequest = {
-      ...selectedRequest,
-      status: "rejected",
-      reviewedOn: new Date(),
-      comments: approvalComments,
-    };
-    
-    setPendingRequests(prev => prev.filter(req => req.id !== selectedRequest.id));
-    setReviewedRequests(prev => [updatedRequest, ...prev]);
-    
-    toast({
-      title: "Leave request rejected",
-      description: "The leave request has been rejected.",
-    });
-    
-    setIsDetailsOpen(false);
-    setApprovalComments("");
-  };
+  // Return if not a manager or admin
+  if (user?.role !== "manager" && user?.role !== "admin") {
+    return (
+      <DashboardShell title="Leave Approvals">
+        <div className="flex flex-col items-center justify-center h-64 text-center">
+          <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
+          <p className="text-muted-foreground">
+            You don't have permission to view this page. Only managers and administrators can approve leave requests.
+          </p>
+        </div>
+      </DashboardShell>
+    );
+  }
 
   const calculateDuration = (start: Date, end: Date) => {
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+    const days = differenceInCalendarDays(new Date(end), new Date(start)) + 1;
+    return days === 1 ? "1 day" : `${days} days`;
   };
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case "approved":
-        return "success";
       case "pending":
         return "outline";
+      case "approved":
+        return "success";
       case "rejected":
         return "destructive";
+      case "cancelled":
+        return "secondary";
       default:
-        return "outline";
+        return "default";
     }
   };
 
-  const getLeaveTypeLabel = (type: string) => {
-    switch (type) {
-      case "annual":
-        return "Annual Leave";
-      case "sick":
-        return "Sick Leave";
-      case "unpaid":
-        return "Unpaid Leave";
-      case "bereavement":
-        return "Bereavement Leave";
-      case "maternity":
-        return "Maternity Leave";
-      case "paternity":
-        return "Paternity Leave";
-      default:
-        return type;
+  const handleApprove = async () => {
+    if (selectedRequest) {
+      await processLeaveRequestMutation.mutateAsync({
+        leaveRequestId: selectedRequest.id,
+        status: "approved",
+        comments: comments,
+      });
+      setReviewOpen(false);
+      setComments("");
+      setSelectedRequest(null);
     }
   };
 
-  const filteredPendingRequests = pendingRequests.filter(request => {
-    const matchesSearchTerm = 
-      searchTerm === "" || 
-      request.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.reason.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesDepartment = 
-      filterDepartment === "all" || 
-      request.user.department === filterDepartment;
-    
-    return matchesSearchTerm && matchesDepartment;
-  });
+  const handleReject = async () => {
+    if (selectedRequest) {
+      await processLeaveRequestMutation.mutateAsync({
+        leaveRequestId: selectedRequest.id,
+        status: "rejected",
+        comments: comments,
+      });
+      setReviewOpen(false);
+      setComments("");
+      setSelectedRequest(null);
+    }
+  };
 
-  const filteredReviewedRequests = reviewedRequests.filter(request => {
-    const matchesSearchTerm = 
-      searchTerm === "" || 
-      request.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.reason.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesDepartment = 
-      filterDepartment === "all" || 
-      request.user.department === filterDepartment;
-    
-    return matchesSearchTerm && matchesDepartment;
-  });
+  const handleReview = (request: LeaveRequest) => {
+    setSelectedRequest(request);
+    setReviewOpen(true);
+    setComments("");
+  };
 
-  const departments = ["Engineering", "Marketing", "Finance", "Customer Support", "HR"];
+  const filteredRequests = allLeaveRequests?.filter(req => {
+    if (activeTab === "pending") return req.status === "pending";
+    if (activeTab === "approved") return req.status === "approved";
+    if (activeTab === "rejected") return req.status === "rejected";
+    if (activeTab === "cancelled") return req.status === "cancelled";
+    return true; // 'all' tab
+  }) || [];
 
   return (
     <DashboardShell title="Leave Approvals">
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Leave Approval Management</h2>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">Leave Approvals</h1>
+        <p className="text-muted-foreground">
+          Review and approve or reject leave requests from employees.
+        </p>
+      </div>
+
+      <Tabs defaultValue="pending" className="mb-6" onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="pending" className="relative">
+            Pending
+            {filteredRequests.length > 0 && activeTab !== "pending" && (
+              <Badge className="ml-2 px-1.5 h-5 absolute -top-2 -right-2 bg-primary text-primary-foreground">
+                {filteredRequests.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="approved">Approved</TabsTrigger>
+          <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+          <TabsTrigger value="all">All</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : filteredRequests.length > 0 ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredRequests.map((request) => (
+            <Card key={request.id} className={cn(
+              request.status === "pending" && "border-primary"
+            )}>
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="capitalize">
+                      {request.type.replace("_", " ")} Leave
+                    </CardTitle>
+                    <CardDescription>
+                      {format(new Date(request.startDate), "PPP")} - {format(new Date(request.endDate), "PPP")}
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center">
+                    <Badge variant={getStatusBadgeVariant(request.status)} className="capitalize mr-2">
+                      {request.status}
+                    </Badge>
+                    {request.status === "pending" && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleReview(request)}>
+                            Review
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedRequest(request);
+                            handleApprove();
+                          }}>
+                            Approve
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedRequest(request);
+                            setReviewOpen(true);
+                            setComments("");
+                          }}>
+                            Reject
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">Employee:</span>
+                    <span>{request.userId}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">Duration:</span>
+                    <span>{calculateDuration(request.startDate, request.endDate)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">Requested:</span>
+                    <span>{format(new Date(request.requestedOn), "PPP")}</span>
+                  </div>
+                  {request.reason && (
+                    <div className="text-sm">
+                      <span className="font-medium">Reason:</span>
+                      <p className="mt-1">{request.reason}</p>
+                    </div>
+                  )}
+                  {request.reviewedOn && (
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">Reviewed:</span>
+                      <span>{format(new Date(request.reviewedOn), "PPP")}</span>
+                    </div>
+                  )}
+                  {request.comments && (
+                    <div className="text-sm">
+                      <span className="font-medium">Comments:</span>
+                      <p className="mt-1">{request.comments}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+              {request.status === "pending" && (
+                <CardFooter className="gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleReview(request)}
+                  >
+                    Review
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    className="flex-1" 
+                    onClick={() => {
+                      setSelectedRequest(request);
+                      handleApprove();
+                    }}
+                    disabled={processLeaveRequestMutation.isPending}
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Approve
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    className="flex-1" 
+                    onClick={() => {
+                      setSelectedRequest(request);
+                      setReviewOpen(true);
+                    }}
+                    disabled={processLeaveRequestMutation.isPending}
+                  >
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Reject
+                  </Button>
+                </CardFooter>
+              )}
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-64 text-center">
+          <h3 className="text-lg font-semibold mb-2">No leave requests found</h3>
           <p className="text-muted-foreground">
-            Review and manage employee leave requests
+            {activeTab === "pending"
+              ? "There are no pending leave requests to review."
+              : `There are no ${activeTab} leave requests.`}
           </p>
         </div>
-        
-        <div className="flex flex-col md:flex-row gap-4 md:items-center">
-          <div className="relative flex-grow">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-            <Input
-              type="search"
-              placeholder="Search by employee name or reason..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-500" />
-            <Select
-              value={filterDepartment}
-              onValueChange={setFilterDepartment}
-            >
-              <SelectTrigger className="w-full md:w-40">
-                <SelectValue placeholder="Filter by department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {departments.map(dept => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        
-        <Tabs defaultValue="pending" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="pending">
-              Pending Approvals
-              <Badge variant="outline" className="ml-2">
-                {filteredPendingRequests.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="reviewed">
-              Reviewed Requests
-              <Badge variant="outline" className="ml-2">
-                {filteredReviewedRequests.length}
-              </Badge>
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="pending" className="mt-6">
-            <div className="grid gap-4">
-              {filteredPendingRequests.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center h-40">
-                    <CalendarIcon className="h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-center text-gray-500">
-                      No pending leave requests to approve
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                filteredPendingRequests.map((request) => (
-                  <Card key={request.id}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <Avatar className="h-9 w-9 mr-2">
-                            <AvatarImage src={request.user.avatar || ""} />
-                            <AvatarFallback>{request.user.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <CardTitle className="text-lg">{request.user.name}</CardTitle>
-                            <CardDescription>
-                              {request.user.department} • Requested on {format(request.requestedOn, "PPP")}
-                            </CardDescription>
-                          </div>
-                        </div>
-                        <Badge variant={getStatusBadgeVariant(request.status)}>
-                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid gap-2">
-                        <h3 className="font-semibold">{getLeaveTypeLabel(request.type)}</h3>
-                        <div className="flex items-center gap-2">
-                          <CalendarIcon className="h-4 w-4 text-gray-400" />
-                          <span>
-                            {format(request.startDate, "PPP")} - {format(request.endDate, "PPP")}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-400" />
-                          <span>
-                            Duration: {calculateDuration(request.startDate, request.endDate)} day(s)
-                          </span>
-                        </div>
-                        <div className="mt-2">
-                          <p className="text-sm text-gray-700">{request.reason}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="border-t pt-4 flex justify-end gap-2">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => handleViewDetails(request)}
-                      >
-                        View Details
-                      </Button>
-                      <Button 
-                        variant="destructive"
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setApprovalComments("");
-                          handleReject();
-                        }}
-                      >
-                        <XCircle className="mr-2 h-4 w-4" />
-                        Reject
-                      </Button>
-                      <Button 
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setApprovalComments("");
-                          handleApprove();
-                        }}
-                      >
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Approve
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="reviewed" className="mt-6">
-            <div className="grid gap-4">
-              {filteredReviewedRequests.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center h-40">
-                    <CalendarIcon className="h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-center text-gray-500">
-                      No reviewed leave requests found
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                filteredReviewedRequests.map((request) => (
-                  <Card key={request.id}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <Avatar className="h-9 w-9 mr-2">
-                            <AvatarImage src={request.user.avatar || ""} />
-                            <AvatarFallback>{request.user.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <CardTitle className="text-lg">{request.user.name}</CardTitle>
-                            <CardDescription>
-                              {request.user.department} • Requested on {format(request.requestedOn, "PPP")}
-                            </CardDescription>
-                          </div>
-                        </div>
-                        <Badge variant={getStatusBadgeVariant(request.status)}>
-                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid gap-2">
-                        <h3 className="font-semibold">{getLeaveTypeLabel(request.type)}</h3>
-                        <div className="flex items-center gap-2">
-                          <CalendarIcon className="h-4 w-4 text-gray-400" />
-                          <span>
-                            {format(request.startDate, "PPP")} - {format(request.endDate, "PPP")}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-400" />
-                          <span>
-                            Duration: {calculateDuration(request.startDate, request.endDate)} day(s)
-                          </span>
-                        </div>
-                        <Separator className="my-2" />
-                        <div className="flex items-start gap-2">
-                          <MessageSquare className="h-4 w-4 text-gray-400 mt-0.5" />
-                          <div>
-                            <div className="text-sm font-medium">Your comments:</div>
-                            <p className="text-sm text-gray-700">{request.comments || "No comments provided."}</p>
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          Reviewed on {format(request.reviewedOn, "PPP")}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-      
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="sm:max-w-[550px]">
+      )}
+
+      {/* Review Dialog */}
+      <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Leave Request Details</DialogTitle>
+            <DialogTitle>
+              Review Leave Request
+            </DialogTitle>
             <DialogDescription>
-              Review this leave request and provide your decision.
+              Add comments before approving or rejecting this leave request.
             </DialogDescription>
           </DialogHeader>
-          
-          {selectedRequest && (
-            <div className="py-4">
-              <div className="flex items-center space-x-3 mb-4">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={selectedRequest.user.avatar || ""} />
-                  <AvatarFallback>{selectedRequest.user.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="font-medium text-lg">{selectedRequest.user.name}</h3>
-                  <p className="text-sm text-gray-500">
-                    {selectedRequest.user.department} • {selectedRequest.user.role}
-                  </p>
-                </div>
-              </div>
-              
-              <Separator className="my-4" />
-              
-              <div className="grid gap-4">
-                <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4 py-4">
+            {selectedRequest && (
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <div className="text-sm font-medium">Leave Type</div>
-                    <div className="text-gray-700">{getLeaveTypeLabel(selectedRequest.type)}</div>
+                    <span className="font-medium">Type:</span>
+                    <p className="capitalize">{selectedRequest.type} Leave</p>
                   </div>
                   <div>
-                    <div className="text-sm font-medium">Status</div>
-                    <Badge variant={getStatusBadgeVariant(selectedRequest.status)}>
-                      {selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}
-                    </Badge>
+                    <span className="font-medium">Duration:</span>
+                    <p>{calculateDuration(selectedRequest.startDate, selectedRequest.endDate)}</p>
                   </div>
-                </div>
-                
-                <div>
-                  <div className="text-sm font-medium">Date Range</div>
-                  <div className="text-gray-700">
-                    {format(selectedRequest.startDate, "PPP")} - {format(selectedRequest.endDate, "PPP")}
+                  <div className="col-span-2">
+                    <span className="font-medium">Dates:</span>
+                    <p>
+                      {format(new Date(selectedRequest.startDate), "PPP")} - {format(new Date(selectedRequest.endDate), "PPP")}
+                    </p>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    Duration: {calculateDuration(selectedRequest.startDate, selectedRequest.endDate)} day(s)
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="text-sm font-medium">Reason</div>
-                  <div className="text-gray-700">{selectedRequest.reason}</div>
-                </div>
-                
-                <div className="border-t pt-4">
-                  <Label htmlFor="comments" className="text-sm font-medium">
-                    Comments (optional)
-                  </Label>
-                  <Textarea
-                    id="comments"
-                    placeholder="Add your comments about this leave request"
-                    rows={3}
-                    value={approvalComments}
-                    onChange={(e) => setApprovalComments(e.target.value)}
-                    className="mt-1"
-                  />
+                  {selectedRequest.reason && (
+                    <div className="col-span-2">
+                      <span className="font-medium">Reason:</span>
+                      <p>{selectedRequest.reason}</p>
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
+            <div>
+              <label htmlFor="comments" className="text-sm font-medium">
+                Comments (optional)
+              </label>
+              <Textarea
+                id="comments"
+                placeholder="Add comments for this review decision"
+                value={comments}
+                onChange={(e) => setComments(e.target.value)}
+                className="mt-1"
+              />
             </div>
-          )}
-          
-          <DialogFooter className="gap-2">
-            <Button variant="ghost" onClick={() => setIsDetailsOpen(false)}>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setReviewOpen(false)}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleReject}>
-              <XCircle className="mr-2 h-4 w-4" />
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={processLeaveRequestMutation.isPending}
+            >
+              {processLeaveRequestMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Reject
             </Button>
-            <Button onClick={handleApprove}>
-              <CheckCircle className="mr-2 h-4 w-4" />
+            <Button
+              variant="default"
+              onClick={handleApprove}
+              disabled={processLeaveRequestMutation.isPending}
+            >
+              {processLeaveRequestMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Approve
             </Button>
           </DialogFooter>
