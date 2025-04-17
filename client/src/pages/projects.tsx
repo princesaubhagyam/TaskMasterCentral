@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -17,11 +17,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Plus, Search, Filter, Loader2 } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
@@ -40,24 +40,29 @@ export default function Projects() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const filteredProjects = projects.filter(project => {
+  const filteredProjects = projects.filter((project) => {
     // Search filter
-    const matchesSearch = search === "" || 
+    const matchesSearch =
+      search === "" ||
       project.name.toLowerCase().includes(search.toLowerCase()) ||
-      (project.description?.toLowerCase().includes(search.toLowerCase()));
-    
+      project.description?.toLowerCase().includes(search.toLowerCase());
+
     // Status filter
-    const matchesFilter = 
-      filter === "all" || 
+    const matchesFilter =
+      filter === "all" ||
       (filter === "completed" && project.status === "completed") ||
       (filter === "in_progress" && project.status === "in_progress") ||
       (filter === "not_started" && project.status === "not_started");
-    
+
     return matchesSearch && matchesFilter;
   });
 
-  const activeProjects = filteredProjects.filter(p => p.status !== "completed");
-  const completedProjects = filteredProjects.filter(p => p.status === "completed");
+  const activeProjects = filteredProjects.filter(
+    (p) => p.status !== "completed"
+  );
+  const completedProjects = filteredProjects.filter(
+    (p) => p.status === "completed"
+  );
 
   const handleViewDetails = (project: Project) => {
     setSelectedProject(project);
@@ -71,7 +76,7 @@ export default function Projects() {
         title: "Project updated",
         description: `Project status changed to ${status}`,
       });
-      
+
       if (selectedProject && selectedProject.id === projectId) {
         setSelectedProject({
           ...selectedProject,
@@ -88,8 +93,8 @@ export default function Projects() {
   };
 
   // Get tasks for the selected project
-  const projectTasks = tasks.filter(task => 
-    task.projectId === selectedProject?.id
+  const projectTasks = tasks.filter(
+    (task) => task.projectId === selectedProject?.id
   );
 
   return (
@@ -108,13 +113,10 @@ export default function Projects() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            
+
             <div className="flex items-center gap-2 w-full md:w-auto">
               <Filter className="h-4 w-4 text-gray-500" />
-              <Select
-                value={filter}
-                onValueChange={setFilter}
-              >
+              <Select value={filter} onValueChange={setFilter}>
                 <SelectTrigger className="w-full md:w-40">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
@@ -125,23 +127,23 @@ export default function Projects() {
                   <SelectItem value="not_started">Not Started</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <div className="flex items-center gap-2 ml-auto">
-                <Button 
-                  variant={viewType === "grid" ? "default" : "outline"} 
+                <Button
+                  variant={viewType === "grid" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setViewType("grid")}
                 >
                   Grid
                 </Button>
-                <Button 
-                  variant={viewType === "list" ? "default" : "outline"} 
+                <Button
+                  variant={viewType === "list" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setViewType("list")}
                 >
                   List
                 </Button>
-                
+
                 <CreateProjectDialog>
                   <Button className="whitespace-nowrap">
                     <Plus className="h-4 w-4 mr-1" />
@@ -152,7 +154,7 @@ export default function Projects() {
             </div>
           </div>
         </div>
-        
+
         {/* Projects Content */}
         {isLoading ? (
           <div className="flex justify-center items-center h-40">
@@ -178,7 +180,7 @@ export default function Projects() {
                 )}
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="active" className="mt-6">
               {viewType === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -187,10 +189,10 @@ export default function Projects() {
                       No active projects found
                     </div>
                   ) : (
-                    activeProjects.map(project => (
-                      <ProjectCard 
-                        key={project.id} 
-                        project={project} 
+                    activeProjects.map((project) => (
+                      <ProjectCard
+                        key={project.id}
+                        project={project}
                         onViewDetails={handleViewDetails}
                       />
                     ))
@@ -214,17 +216,22 @@ export default function Projects() {
                     },
                     {
                       header: "Status",
-                      accessor: (project) => <StatusBadge status={project.status} />,
+                      accessor: (project) => (
+                        <StatusBadge status={project.status || ""} />
+                      ),
                     },
                     {
                       header: "Deadline",
-                      accessor: (project) => project.deadline ? format(new Date(project.deadline), "MMM d, yyyy") : "No deadline",
+                      accessor: (project) =>
+                        project.deadline
+                          ? format(new Date(project.deadline), "MMM d, yyyy")
+                          : "No deadline",
                     },
                     {
                       header: "Action",
                       accessor: (project) => (
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleViewDetails(project)}
                         >
@@ -236,7 +243,7 @@ export default function Projects() {
                 />
               )}
             </TabsContent>
-            
+
             <TabsContent value="completed" className="mt-6">
               {viewType === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -245,9 +252,9 @@ export default function Projects() {
                       No completed projects found
                     </div>
                   ) : (
-                    completedProjects.map(project => (
-                      <ProjectCard 
-                        key={project.id} 
+                    completedProjects.map((project) => (
+                      <ProjectCard
+                        key={project.id}
                         project={project}
                         onViewDetails={handleViewDetails}
                       />
@@ -272,17 +279,22 @@ export default function Projects() {
                     },
                     {
                       header: "Status",
-                      accessor: (project) => <StatusBadge status={project.status} />,
+                      accessor: (project) => (
+                        <StatusBadge status={project.status || ""} />
+                      ),
                     },
                     {
                       header: "Deadline",
-                      accessor: (project) => project.deadline ? format(new Date(project.deadline), "MMM d, yyyy") : "No deadline",
+                      accessor: (project) =>
+                        project.deadline
+                          ? format(new Date(project.deadline), "MMM d, yyyy")
+                          : "No deadline",
                     },
                     {
                       header: "Action",
                       accessor: (project) => (
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleViewDetails(project)}
                         >
@@ -297,7 +309,7 @@ export default function Projects() {
           </Tabs>
         )}
       </div>
-      
+
       {/* Project Details Dialog */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="max-w-3xl">
@@ -307,7 +319,7 @@ export default function Projects() {
               {selectedProject?.description || "No description provided"}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
               <div className="flex justify-between">
@@ -317,16 +329,21 @@ export default function Projects() {
               <div className="flex justify-between">
                 <span className="font-medium text-sm">Deadline:</span>
                 <span className="text-sm">
-                  {selectedProject?.deadline 
-                    ? format(new Date(selectedProject.deadline), "MMMM d, yyyy") 
+                  {selectedProject?.deadline
+                    ? format(new Date(selectedProject.deadline), "MMMM d, yyyy")
                     : "No deadline"}
                 </span>
               </div>
               <div className="pt-2">
-                <label className="font-medium text-sm block mb-2">Update Status:</label>
+                <label className="font-medium text-sm block mb-2">
+                  Update Status:
+                </label>
                 <Select
-                  value={selectedProject?.status}
-                  onValueChange={(value) => selectedProject && handleUpdateStatus(selectedProject.id, value)}
+                  value={selectedProject?.status || ""}
+                  onValueChange={(value) =>
+                    selectedProject &&
+                    handleUpdateStatus(selectedProject.id, value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
@@ -339,7 +356,7 @@ export default function Projects() {
                 </Select>
               </div>
             </div>
-            
+
             <div>
               <h3 className="font-medium mb-2">Project Tasks</h3>
               {isLoadingTasks ? (
@@ -353,19 +370,28 @@ export default function Projects() {
               ) : (
                 <div className="border rounded-md overflow-hidden">
                   <div className="max-h-40 overflow-y-auto">
-                    {projectTasks.map(task => (
-                      <div key={task.id} className="flex items-center justify-between p-2 border-b last:border-b-0">
+                    {projectTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="flex items-center justify-between p-2 border-b last:border-b-0"
+                      >
                         <div className="flex items-center">
-                          <Checkbox 
-                            checked={task.status === "completed"} 
-                            className="mr-2 h-4 w-4" 
-                            disabled 
+                          <Checkbox
+                            checked={task.status === "completed"}
+                            className="mr-2 h-4 w-4"
+                            disabled
                           />
-                          <span className={`text-sm ${task.status === "completed" ? "line-through text-gray-500" : ""}`}>
+                          <span
+                            className={`text-sm ${
+                              task.status === "completed"
+                                ? "line-through text-gray-500"
+                                : ""
+                            }`}
+                          >
                             {task.title}
                           </span>
                         </div>
-                        <StatusBadge status={task.priority} />
+                        <StatusBadge status={task.priority || ""} />
                       </div>
                     ))}
                   </div>
@@ -373,7 +399,7 @@ export default function Projects() {
               )}
             </div>
           </div>
-          
+
           <div className="flex justify-end mt-4">
             <Button variant="outline" onClick={() => setDetailsOpen(false)}>
               Close

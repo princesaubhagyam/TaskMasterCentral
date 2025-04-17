@@ -1,5 +1,11 @@
 import { Project } from "@shared/schema";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,7 +52,7 @@ export function ProjectCard({ project, onViewDetails }: ProjectCardProps) {
             {project.description || "No description provided"}
           </p>
         </div>
-        
+
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <div className="flex items-center text-sm">
@@ -57,12 +63,12 @@ export function ProjectCard({ project, onViewDetails }: ProjectCardProps) {
               {formatDate(project.deadline)}
             </span>
           </div>
-          
+
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-700">Status:</span>
-            <StatusBadge status={project.status} />
+            <StatusBadge status={project.status || ""} />
           </div>
-          
+
           <div className="space-y-1">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-700">Progress:</span>
@@ -76,22 +82,28 @@ export function ProjectCard({ project, onViewDetails }: ProjectCardProps) {
             </div>
           </div>
         </div>
-        
+
         <div className="mt-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-700">Team:</span>
             <div className="flex -space-x-2">
               {/* These would be real team members in a production app */}
               <Avatar className="h-6 w-6 ring-2 ring-white">
-                <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=AB`} />
+                <AvatarImage
+                  src={`https://api.dicebear.com/6.x/initials/svg?seed=AB`}
+                />
                 <AvatarFallback>AB</AvatarFallback>
               </Avatar>
               <Avatar className="h-6 w-6 ring-2 ring-white">
-                <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=CD`} />
+                <AvatarImage
+                  src={`https://api.dicebear.com/6.x/initials/svg?seed=CD`}
+                />
                 <AvatarFallback>CD</AvatarFallback>
               </Avatar>
               <Avatar className="h-6 w-6 ring-2 ring-white">
-                <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=EF`} />
+                <AvatarImage
+                  src={`https://api.dicebear.com/6.x/initials/svg?seed=EF`}
+                />
                 <AvatarFallback>EF</AvatarFallback>
               </Avatar>
             </div>
@@ -99,9 +111,9 @@ export function ProjectCard({ project, onViewDetails }: ProjectCardProps) {
         </div>
       </CardContent>
       <CardFooter>
-        <Button 
+        <Button
           className="w-full"
-          variant="outline" 
+          variant="outline"
           onClick={() => onViewDetails(project)}
         >
           <Eye className="h-4 w-4 mr-2" />

@@ -11,29 +11,22 @@ export function useTimeTracking() {
   const [clockInTime, setClockInTime] = useState<string | null>(null);
 
   // Get current time entry (if any)
-  const {
-    data: currentTimeEntry,
-    isLoading,
-  } = useQuery<TimeEntry | null>({
+  const { data: currentTimeEntry, isLoading } = useQuery<TimeEntry | null>({
     queryKey: ["/api/time-entries/current"],
     enabled: !!user,
     refetchInterval: 60000, // Refresh every minute
   });
 
   // Get time entries history
-  const {
-    data: timeEntries = [],
-    isLoading: isLoadingEntries,
-  } = useQuery<TimeEntry[]>({
+  const { data: timeEntries = [], isLoading: isLoadingEntries } = useQuery<
+    TimeEntry[]
+  >({
     queryKey: ["/api/time-entries"],
     enabled: !!user,
   });
 
   // Clock in mutation
-  const {
-    mutate: clockIn,
-    isPending: isClockingIn,
-  } = useMutation({
+  const { mutate: clockIn, isPending: isClockingIn } = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/time-entries/clock-in", {});
       return await res.json();
@@ -44,7 +37,9 @@ export function useTimeTracking() {
       setClockInTime(new Date(timeEntry.clockIn).toLocaleTimeString());
       toast({
         title: "Clocked in successfully",
-        description: `Clocked in at ${new Date(timeEntry.clockIn).toLocaleTimeString()}`,
+        description: `Clocked in at ${new Date(
+          timeEntry.clockIn
+        ).toLocaleTimeString()}`,
       });
     },
     onError: (error: Error) => {
@@ -57,12 +52,9 @@ export function useTimeTracking() {
   });
 
   // Clock out mutation
-  const {
-    mutate: clockOut,
-    isPending: isClockingOut,
-  } = useMutation({
-    mutationFn: async (notes?: string) => {
-      const res = await apiRequest("POST", "/api/time-entries/clock-out", { notes });
+  const { mutate: clockOut, isPending: isClockingOut } = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/time-entries/clock-out", {});
       return await res.json();
     },
     onSuccess: () => {
@@ -94,44 +86,50 @@ export function useTimeTracking() {
   const calculateStats = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    const todayEntries = timeEntries.filter(entry => {
+
+    const todayEntries = timeEntries.filter((entry) => {
       const entryDate = new Date(entry.clockIn);
       entryDate.setHours(0, 0, 0, 0);
       return entryDate.getTime() === today.getTime();
     });
-    
+
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
     weekStart.setHours(0, 0, 0, 0);
-    
-    const weekEntries = timeEntries.filter(entry => {
+
+    const weekEntries = timeEntries.filter((entry) => {
       const entryDate = new Date(entry.clockIn);
       return entryDate >= weekStart;
     });
-    
+
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
-    
-    const monthEntries = timeEntries.filter(entry => {
+
+    const monthEntries = timeEntries.filter((entry) => {
       const entryDate = new Date(entry.clockIn);
       return entryDate >= monthStart;
     });
-    
+
     // Calculate total hours
-    const todayHours = todayEntries.reduce((total, entry) => 
-      total + (entry.totalHours || 0), 0);
-    
-    const weekHours = weekEntries.reduce((total, entry) => 
-      total + (entry.totalHours || 0), 0);
-    
-    const monthHours = monthEntries.reduce((total, entry) => 
-      total + (entry.totalHours || 0), 0);
-    
+    const todayHours = todayEntries.reduce(
+      (total, entry) => total + (entry.totalHours || 0),
+      0
+    );
+
+    const weekHours = weekEntries.reduce(
+      (total, entry) => total + (entry.totalHours || 0),
+      0
+    );
+
+    const monthHours = monthEntries.reduce(
+      (total, entry) => total + (entry.totalHours || 0),
+      0
+    );
+
     // Calculate overtime (assuming 8 hours per day)
     const overtimeHours = Math.max(0, todayHours - 8);
-    
+
     return {
       todayHours,
       weekHours,
@@ -140,12 +138,14 @@ export function useTimeTracking() {
     };
   };
 
-  const stats = !isLoadingEntries ? calculateStats() : {
-    todayHours: 0,
-    weekHours: 0,
-    monthHours: 0,
-    overtimeHours: 0,
-  };
+  const stats = !isLoadingEntries
+    ? calculateStats()
+    : {
+        todayHours: 0,
+        weekHours: 0,
+        monthHours: 0,
+        overtimeHours: 0,
+      };
 
   return {
     isClockedIn: !!currentTimeEntry,

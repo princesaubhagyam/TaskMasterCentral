@@ -2,10 +2,31 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLeaveRequests } from "@/hooks/use-leave-requests";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, XCircle, Calendar, MoreHorizontal } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Calendar,
+  MoreHorizontal,
+} from "lucide-react";
 import { format, differenceInCalendarDays } from "date-fns";
 import { LeaveRequest } from "@shared/schema";
 import { useState } from "react";
@@ -24,17 +45,14 @@ import {
 export default function LeaveApprovals() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("pending");
-  const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(
+    null
+  );
   const [reviewOpen, setReviewOpen] = useState(false);
   const [comments, setComments] = useState("");
-  
-  const {
-    allLeaveRequests,
-    isLoading,
-    error,
-    processLeaveRequestMutation,
-  } = useLeaveRequests();
 
+  const { allLeaveRequests, isLoading, error, processLeaveRequestMutation } =
+    useLeaveRequests(true);
   // Return if not a manager or admin
   if (user?.role !== "manager" && user?.role !== "admin") {
     return (
@@ -42,19 +60,20 @@ export default function LeaveApprovals() {
         <div className="flex flex-col items-center justify-center h-64 text-center">
           <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
           <p className="text-muted-foreground">
-            You don't have permission to view this page. Only managers and administrators can approve leave requests.
+            You don't have permission to view this page. Only managers and
+            administrators can approve leave requests.
           </p>
         </div>
       </DashboardShell>
     );
   }
 
-  const calculateDuration = (start: Date, end: Date) => {
+  const calculateDuration = (start: string, end: string) => {
     const days = differenceInCalendarDays(new Date(end), new Date(start)) + 1;
     return days === 1 ? "1 day" : `${days} days`;
   };
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status: string | null) => {
     switch (status) {
       case "pending":
         return "outline";
@@ -101,13 +120,15 @@ export default function LeaveApprovals() {
     setComments("");
   };
 
-  const filteredRequests = allLeaveRequests?.filter(req => {
-    if (activeTab === "pending") return req.status === "pending";
-    if (activeTab === "approved") return req.status === "approved";
-    if (activeTab === "rejected") return req.status === "rejected";
-    if (activeTab === "cancelled") return req.status === "cancelled";
-    return true; // 'all' tab
-  }) || [];
+  const filteredRequests =
+    allLeaveRequests?.filter((req) => {
+      if (activeTab === "pending") return req.status === "pending";
+      if (activeTab === "approved") return req.status === "approved";
+      if (activeTab === "rejected") return req.status === "rejected";
+      if (activeTab === "cancelled") return req.status === "cancelled";
+      return true; // 'all' tab
+    }) || [];
+  console.log(allLeaveRequests);
 
   return (
     <DashboardShell title="Leave Approvals">
@@ -118,7 +139,11 @@ export default function LeaveApprovals() {
         </p>
       </div>
 
-      <Tabs defaultValue="pending" className="mb-6" onValueChange={setActiveTab}>
+      <Tabs
+        defaultValue="pending"
+        className="mb-6"
+        onValueChange={setActiveTab}
+      >
         <TabsList>
           <TabsTrigger value="pending" className="relative">
             Pending
@@ -134,7 +159,7 @@ export default function LeaveApprovals() {
           <TabsTrigger value="all">All</TabsTrigger>
         </TabsList>
       </Tabs>
-      
+
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -142,9 +167,10 @@ export default function LeaveApprovals() {
       ) : filteredRequests.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredRequests.map((request) => (
-            <Card key={request.id} className={cn(
-              request.status === "pending" && "border-primary"
-            )}>
+            <Card
+              key={request.id}
+              className={cn(request.status === "pending" && "border-primary")}
+            >
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
                   <div>
@@ -152,37 +178,51 @@ export default function LeaveApprovals() {
                       {request.type.replace("_", " ")} Leave
                     </CardTitle>
                     <CardDescription>
-                      {format(new Date(request.startDate), "PPP")} - {format(new Date(request.endDate), "PPP")}
+                      {format(new Date(request.startDate), "PPP")} -{" "}
+                      {format(new Date(request.endDate), "PPP")}
                     </CardDescription>
                   </div>
                   <div className="flex items-center">
-                    <Badge variant={getStatusBadgeVariant(request.status)} className="capitalize mr-2">
+                    <Badge
+                      variant={getStatusBadgeVariant(request.status)}
+                      className="capitalize mr-2"
+                    >
                       {request.status}
                     </Badge>
                     {request.status === "pending" && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleReview(request)}>
+                          <DropdownMenuItem
+                            onClick={() => handleReview(request)}
+                          >
                             Review
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
-                            setSelectedRequest(request);
-                            handleApprove();
-                          }}>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              handleApprove();
+                            }}
+                          >
                             Approve
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
-                            setSelectedRequest(request);
-                            setReviewOpen(true);
-                            setComments("");
-                          }}>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setReviewOpen(true);
+                              setComments("");
+                            }}
+                          >
                             Reject
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -199,7 +239,9 @@ export default function LeaveApprovals() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="font-medium">Duration:</span>
-                    <span>{calculateDuration(request.startDate, request.endDate)}</span>
+                    <span>
+                      {calculateDuration(request.startDate, request.endDate)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="font-medium">Requested:</span>
@@ -227,16 +269,16 @@ export default function LeaveApprovals() {
               </CardContent>
               {request.status === "pending" && (
                 <CardFooter className="gap-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="flex-1"
                     onClick={() => handleReview(request)}
                   >
                     Review
                   </Button>
-                  <Button 
-                    variant="default" 
-                    className="flex-1" 
+                  <Button
+                    variant="default"
+                    className="flex-1"
                     onClick={() => {
                       setSelectedRequest(request);
                       handleApprove();
@@ -246,9 +288,9 @@ export default function LeaveApprovals() {
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Approve
                   </Button>
-                  <Button 
-                    variant="destructive" 
-                    className="flex-1" 
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
                     onClick={() => {
                       setSelectedRequest(request);
                       setReviewOpen(true);
@@ -265,7 +307,9 @@ export default function LeaveApprovals() {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center h-64 text-center">
-          <h3 className="text-lg font-semibold mb-2">No leave requests found</h3>
+          <h3 className="text-lg font-semibold mb-2">
+            No leave requests found
+          </h3>
           <p className="text-muted-foreground">
             {activeTab === "pending"
               ? "There are no pending leave requests to review."
@@ -278,9 +322,7 @@ export default function LeaveApprovals() {
       <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>
-              Review Leave Request
-            </DialogTitle>
+            <DialogTitle>Review Leave Request</DialogTitle>
             <DialogDescription>
               Add comments before approving or rejecting this leave request.
             </DialogDescription>
@@ -295,12 +337,18 @@ export default function LeaveApprovals() {
                   </div>
                   <div>
                     <span className="font-medium">Duration:</span>
-                    <p>{calculateDuration(selectedRequest.startDate, selectedRequest.endDate)}</p>
+                    <p>
+                      {calculateDuration(
+                        selectedRequest.startDate,
+                        selectedRequest.endDate
+                      )}
+                    </p>
                   </div>
                   <div className="col-span-2">
                     <span className="font-medium">Dates:</span>
                     <p>
-                      {format(new Date(selectedRequest.startDate), "PPP")} - {format(new Date(selectedRequest.endDate), "PPP")}
+                      {format(new Date(selectedRequest.startDate), "PPP")} -{" "}
+                      {format(new Date(selectedRequest.endDate), "PPP")}
                     </p>
                   </div>
                   {selectedRequest.reason && (
@@ -326,10 +374,7 @@ export default function LeaveApprovals() {
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setReviewOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setReviewOpen(false)}>
               Cancel
             </Button>
             <Button

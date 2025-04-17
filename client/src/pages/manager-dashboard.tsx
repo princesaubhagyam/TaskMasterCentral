@@ -13,23 +13,22 @@ import { useLocation } from "wouter";
 
 export default function ManagerDashboard() {
   const [_, navigate] = useLocation();
-  
-  const { 
-    projects, 
-    isLoading: isLoadingProjects, 
+
+  const {
+    projects,
+    isLoading: isLoadingProjects,
     completedProjects,
     inProgressProjects,
-    upcomingDeadlines
+    upcomingDeadlines,
   } = useProjects();
-  
+
   // Get team members (employees)
-  const { 
-    data: employees = [], 
-    isLoading: isLoadingEmployees 
-  } = useQuery<User[]>({
+  const { data: employees = [], isLoading: isLoadingEmployees } = useQuery<
+    User[]
+  >({
     queryKey: ["/api/users"],
   });
-  
+
   return (
     <DashboardShell title="Manager Dashboard">
       <div className="space-y-6">
@@ -46,14 +45,16 @@ export default function ManagerDashboard() {
                   <Skeleton className="h-10 w-20" />
                 ) : (
                   <>
-                    <h2 className="text-lg font-medium text-gray-900">{completedProjects.length}</h2>
+                    <h2 className="text-lg font-medium text-gray-900">
+                      {completedProjects.length}
+                    </h2>
                     <p className="text-sm text-gray-500">Completed Projects</p>
                   </>
                 )}
               </div>
             </div>
           </Card>
-          
+
           {/* Active Projects */}
           <Card className="bg-white shadow p-6">
             <div className="flex items-center">
@@ -65,14 +66,16 @@ export default function ManagerDashboard() {
                   <Skeleton className="h-10 w-20" />
                 ) : (
                   <>
-                    <h2 className="text-lg font-medium text-gray-900">{inProgressProjects.length}</h2>
+                    <h2 className="text-lg font-medium text-gray-900">
+                      {inProgressProjects.length}
+                    </h2>
                     <p className="text-sm text-gray-500">Active Projects</p>
                   </>
                 )}
               </div>
             </div>
           </Card>
-          
+
           {/* Upcoming Deadlines */}
           <Card className="bg-white shadow p-6">
             <div className="flex items-center">
@@ -84,7 +87,9 @@ export default function ManagerDashboard() {
                   <Skeleton className="h-10 w-20" />
                 ) : (
                   <>
-                    <h2 className="text-lg font-medium text-gray-900">{upcomingDeadlines.length}</h2>
+                    <h2 className="text-lg font-medium text-gray-900">
+                      {upcomingDeadlines.length}
+                    </h2>
                     <p className="text-sm text-gray-500">Upcoming Deadlines</p>
                   </>
                 )}
@@ -92,20 +97,22 @@ export default function ManagerDashboard() {
             </div>
           </Card>
         </div>
-        
+
         {/* Team Status */}
         <Card className="bg-white shadow overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900">Team Status (Today)</h2>
-            <Button 
-              variant="link" 
+            <h2 className="text-lg font-medium text-gray-900">
+              Team Status (Today)
+            </h2>
+            <Button
+              variant="link"
               className="text-blue-500 hover:text-blue-700 flex items-center gap-1"
               onClick={() => navigate("/team")}
             >
               View All <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
-          
+
           <CardContent className="p-0">
             <DataTable
               data={employees}
@@ -116,12 +123,20 @@ export default function ManagerDashboard() {
                   accessor: (employee) => (
                     <div className="flex items-center">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src={`https://api.dicebear.com/6.x/avataaars/svg?seed=${employee.username}`} />
-                        <AvatarFallback>{employee.name.charAt(0)}</AvatarFallback>
+                        <AvatarImage
+                          src={`https://api.dicebear.com/6.x/avataaars/svg?seed=${employee.username}`}
+                        />
+                        <AvatarFallback>
+                          {employee.name.charAt(0)}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{employee.name}</div>
-                        <div className="text-sm text-gray-500">{employee.department}</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {employee.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {employee.department}
+                        </div>
                       </div>
                     </div>
                   ),
@@ -141,8 +156,8 @@ export default function ManagerDashboard() {
                 {
                   header: "Action",
                   accessor: (employee) => (
-                    <Button 
-                      variant="link" 
+                    <Button
+                      variant="link"
                       className="text-blue-500 hover:text-blue-700"
                       onClick={() => navigate(`/team/${employee.id}`)}
                     >
@@ -154,20 +169,22 @@ export default function ManagerDashboard() {
             />
           </CardContent>
         </Card>
-        
+
         {/* Project Deadlines */}
         <Card className="bg-white shadow overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900">Upcoming Project Deadlines</h2>
-            <Button 
-              variant="link" 
+            <h2 className="text-lg font-medium text-gray-900">
+              Upcoming Project Deadlines
+            </h2>
+            <Button
+              variant="link"
               className="text-blue-500 hover:text-blue-700 flex items-center gap-1"
               onClick={() => navigate("/projects")}
             >
               View All <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
-          
+
           {isLoadingProjects ? (
             <div className="p-6 space-y-4">
               <Skeleton className="h-16 w-full" />
@@ -180,17 +197,19 @@ export default function ManagerDashboard() {
                 <li key={project.id} className="px-6 py-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-medium text-gray-900">{project.name}</h3>
+                      <h3 className="text-sm font-medium text-gray-900">
+                        {project.name}
+                      </h3>
                       <div className="mt-1 flex items-center">
                         <p className="text-sm text-gray-500">
-                          {project.deadline ? (
-                            `Due ${new Date(project.deadline).toLocaleDateString()}`
-                          ) : (
-                            'No deadline'
-                          )}
+                          {project.deadline
+                            ? `Due ${new Date(
+                                project.deadline
+                              ).toLocaleDateString()}`
+                            : "No deadline"}
                         </p>
                         <span className="ml-4">
-                          <StatusBadge status={project.status} />
+                          <StatusBadge status={project.status || ""} />
                         </span>
                       </div>
                     </div>
@@ -207,8 +226,8 @@ export default function ManagerDashboard() {
                         </Avatar>
                       </div>
                       <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="bg-green-500 h-full" 
+                        <div
+                          className="bg-green-500 h-full"
                           style={{ width: `${Math.random() * 100}%` }}
                         ></div>
                       </div>

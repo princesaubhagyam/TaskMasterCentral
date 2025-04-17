@@ -41,15 +41,15 @@ app.use((req, res, next) => {
 
 (async () => {
   // Initialize the database if needed
-  if (storage.setupDatabase) {
-    try {
-      await storage.setupDatabase();
-      log("Database initialized successfully", "server");
-    } catch (error) {
-      console.error("Failed to initialize database:", error);
-    }
-  }
-  
+  // if (storage.setupDatabase) {
+  //   try {
+  //     await storage.setupDatabase();
+  //     log("Database initialized successfully", "server");
+  //   } catch (error) {
+  //     console.error("Failed to initialize database:", error);
+  //   }
+  // }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -73,11 +73,12 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  server
+    .listen(port, "0.0.0.0", () => {
+      log(`serving on port ${port}`);
+    })
+    .on("error", (err) => {
+      log(`Server error: ${err.message}`);
+      process.exit(1);
+    });
 })();

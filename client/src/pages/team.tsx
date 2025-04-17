@@ -2,18 +2,18 @@ import { useState } from "react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { useQuery } from "@tanstack/react-query";
 import { User, Task, TimeEntry } from "@shared/schema";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -29,39 +29,35 @@ export default function Team() {
   const [search, setSearch] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState<User | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  
+
   // Fetch employees
-  const { 
-    data: employees = [], 
-    isLoading 
-  } = useQuery<User[]>({
+  const { data: employees = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
-  
+
   // Fetch employee's tasks when an employee is selected
-  const {
-    data: employeeTasks = [],
-    isLoading: isLoadingTasks,
-  } = useQuery<Task[]>({
+  const { data: employeeTasks = [], isLoading: isLoadingTasks } = useQuery<
+    Task[]
+  >({
     queryKey: ["/api/tasks", selectedEmployee?.id],
     enabled: !!selectedEmployee,
   });
-  
+
   // Fetch employee's time entries when an employee is selected
-  const {
-    data: timeEntries = [],
-    isLoading: isLoadingTimeEntries,
-  } = useQuery<TimeEntry[]>({
+  const { data: timeEntries = [], isLoading: isLoadingTimeEntries } = useQuery<
+    TimeEntry[]
+  >({
     queryKey: ["/api/time-entries", selectedEmployee?.id],
     enabled: !!selectedEmployee,
   });
 
-  const filteredEmployees = employees.filter(employee => 
-    employee.role === "employee" && 
-    (search === "" || 
-      employee.name.toLowerCase().includes(search.toLowerCase()) ||
-      employee.email.toLowerCase().includes(search.toLowerCase()) ||
-      employee.department?.toLowerCase().includes(search.toLowerCase()))
+  const filteredEmployees = employees.filter(
+    (employee) =>
+      employee.role === "employee" &&
+      (search === "" ||
+        employee.name.toLowerCase().includes(search.toLowerCase()) ||
+        employee.email.toLowerCase().includes(search.toLowerCase()) ||
+        employee.department?.toLowerCase().includes(search.toLowerCase()))
   );
 
   const handleViewDetails = (employee: User) => {
@@ -74,7 +70,7 @@ export default function Team() {
     const isWorking = true; // In a real app, this would be determined by an API call
     const tasksCompleted = 3; // Sample value
     const tasksInProgress = 2; // Sample value
-    
+
     return {
       isWorking,
       tasksCompleted,
@@ -100,7 +96,7 @@ export default function Team() {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Team Members */}
         {isLoading ? (
           <div className="flex justify-center items-center h-40">
@@ -114,20 +110,28 @@ export default function Team() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEmployees.map(employee => {
+            {filteredEmployees.map((employee) => {
               const stats = calculateEmployeeStats(employee);
-              
+
               return (
                 <Card key={employee.id} className="overflow-hidden">
                   <CardHeader className="pb-2">
                     <div className="flex items-center space-x-4">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={`https://api.dicebear.com/6.x/avataaars/svg?seed=${employee.username}`} />
-                        <AvatarFallback>{employee.name.charAt(0)}</AvatarFallback>
+                        <AvatarImage
+                          src={`https://api.dicebear.com/6.x/avataaars/svg?seed=${employee.username}`}
+                        />
+                        <AvatarFallback>
+                          {employee.name.charAt(0)}
+                        </AvatarFallback>
                       </Avatar>
                       <div>
-                        <CardTitle className="text-lg">{employee.name}</CardTitle>
-                        <CardDescription>{employee.department || "No department"}</CardDescription>
+                        <CardTitle className="text-lg">
+                          {employee.name}
+                        </CardTitle>
+                        <CardDescription>
+                          {employee.department || "No department"}
+                        </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
@@ -137,26 +141,36 @@ export default function Team() {
                         <span className="text-gray-500">Email: </span>
                         <span className="font-medium">{employee.email}</span>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Status:</span>
-                          <StatusBadge status={stats.isWorking ? "working" : "on leave"} />
+                          <StatusBadge
+                            status={stats.isWorking ? "working" : "on leave"}
+                          />
                         </div>
-                        
+
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Tasks Completed:</span>
-                          <span className="font-medium">{stats.tasksCompleted}</span>
+                          <span className="text-gray-500">
+                            Tasks Completed:
+                          </span>
+                          <span className="font-medium">
+                            {stats.tasksCompleted}
+                          </span>
                         </div>
-                        
+
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Tasks In Progress:</span>
-                          <span className="font-medium">{stats.tasksInProgress}</span>
+                          <span className="text-gray-500">
+                            Tasks In Progress:
+                          </span>
+                          <span className="font-medium">
+                            {stats.tasksInProgress}
+                          </span>
                         </div>
                       </div>
-                      
-                      <Button 
-                        variant="outline" 
+
+                      <Button
+                        variant="outline"
                         className="w-full"
                         onClick={() => handleViewDetails(employee)}
                       >
@@ -170,23 +184,28 @@ export default function Team() {
           </div>
         )}
       </div>
-      
+
       {/* Employee Details Dialog */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
-                <AvatarImage src={`https://api.dicebear.com/6.x/avataaars/svg?seed=${selectedEmployee?.username}`} />
-                <AvatarFallback>{selectedEmployee?.name.charAt(0)}</AvatarFallback>
+                <AvatarImage
+                  src={`https://api.dicebear.com/6.x/avataaars/svg?seed=${selectedEmployee?.username}`}
+                />
+                <AvatarFallback>
+                  {selectedEmployee?.name.charAt(0)}
+                </AvatarFallback>
               </Avatar>
               {selectedEmployee?.name}
             </DialogTitle>
             <DialogDescription>
-              {selectedEmployee?.department || "No department"} • {selectedEmployee?.email}
+              {selectedEmployee?.department || "No department"} •{" "}
+              {selectedEmployee?.email}
             </DialogDescription>
           </DialogHeader>
-          
+
           <Tabs defaultValue="tasks" className="mt-4">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="tasks" className="flex items-center gap-1">
@@ -198,7 +217,7 @@ export default function Team() {
                 Time Tracking
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="tasks" className="mt-4">
               {isLoadingTasks ? (
                 <div className="flex justify-center items-center h-40">
@@ -216,7 +235,13 @@ export default function Team() {
                       header: "Task",
                       accessor: (task) => (
                         <div>
-                          <div className={`font-medium ${task.status === "completed" ? "line-through text-gray-500" : ""}`}>
+                          <div
+                            className={`font-medium ${
+                              task.status === "completed"
+                                ? "line-through text-gray-500"
+                                : ""
+                            }`}
+                          >
                             {task.title}
                           </div>
                           {task.description && (
@@ -229,7 +254,9 @@ export default function Team() {
                     },
                     {
                       header: "Priority",
-                      accessor: (task) => <StatusBadge status={task.priority} />,
+                      accessor: (task) => (
+                        <StatusBadge status={task.priority} />
+                      ),
                     },
                     {
                       header: "Status",
@@ -237,15 +264,16 @@ export default function Team() {
                     },
                     {
                       header: "Due Date",
-                      accessor: (task) => task.dueDate 
-                        ? format(new Date(task.dueDate), "MMM d, yyyy")
-                        : "No deadline",
+                      accessor: (task) =>
+                        task.dueDate
+                          ? format(new Date(task.dueDate), "MMM d, yyyy")
+                          : "No deadline",
                     },
                   ]}
                 />
               )}
             </TabsContent>
-            
+
             <TabsContent value="time" className="mt-4">
               {isLoadingTimeEntries ? (
                 <div className="flex justify-center items-center h-40">
@@ -261,32 +289,42 @@ export default function Team() {
                   columns={[
                     {
                       header: "Date",
-                      accessor: (entry) => format(new Date(entry.clockIn), "MMM d, yyyy"),
+                      accessor: (entry) =>
+                        format(new Date(entry.clockIn), "MMM d, yyyy"),
                     },
                     {
                       header: "Clock In",
-                      accessor: (entry) => format(new Date(entry.clockIn), "h:mm a"),
+                      accessor: (entry) =>
+                        format(new Date(entry.clockIn), "h:mm a"),
                     },
                     {
                       header: "Clock Out",
-                      accessor: (entry) => entry.clockOut 
-                        ? format(new Date(entry.clockOut), "h:mm a")
-                        : "Still working",
+                      accessor: (entry) =>
+                        entry.clockOut
+                          ? format(new Date(entry.clockOut), "h:mm a")
+                          : "Still working",
                     },
                     {
                       header: "Hours",
-                      accessor: (entry) => entry.totalHours ? entry.totalHours.toFixed(2) : "-",
+                      accessor: (entry) =>
+                        entry.totalHours ? entry.totalHours.toFixed(2) : "-",
                     },
                     {
                       header: "Status",
                       accessor: (entry) => (
-                        <StatusBadge status={entry.status === "in_progress" ? "working" : "completed"} />
+                        <StatusBadge
+                          status={
+                            entry.status === "in_progress"
+                              ? "working"
+                              : "completed"
+                          }
+                        />
                       ),
                     },
                   ]}
                 />
               )}
-              
+
               <div className="mt-4 bg-gray-50 p-4 rounded-md">
                 <h3 className="font-medium mb-2">Summary</h3>
                 <div className="grid grid-cols-3 gap-4">

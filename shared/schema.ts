@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   role: text("role").notNull().default("employee"), // "admin", "manager", "employee"
   department: text("department"),
+  profile_img: text("profile_img"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -20,6 +21,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   role: true,
   department: true,
+  profile_img: true,
 });
 
 // Project Model
@@ -27,7 +29,7 @@ export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
-  deadline: timestamp("deadline"),
+  deadline: text("deadline"),
   status: text("status").default("in_progress"), // "not_started", "in_progress", "completed"
   managerId: integer("manager_id").notNull(),
 });
@@ -49,7 +51,7 @@ export const tasks = pgTable("tasks", {
   assigneeId: integer("assignee_id"),
   status: text("status").default("not_started"), // "not_started", "in_progress", "completed"
   priority: text("priority").default("medium"), // "low", "medium", "high"
-  dueDate: timestamp("due_date"),
+  dueDate: text("due_date"),
 });
 
 export const insertTaskSchema = createInsertSchema(tasks).pick({
@@ -89,8 +91,8 @@ export const leaveRequests = pgTable("leave_requests", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   type: text("type").notNull(), // "annual", "sick", "unpaid", "bereavement", "maternity", "paternity"
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date").notNull(),
   reason: text("reason"),
   status: text("status").default("pending"), // "pending", "approved", "rejected", "cancelled"
   requestedOn: timestamp("requested_on").notNull().defaultNow(),
@@ -130,13 +132,17 @@ export const loginSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-export const registerSchema = insertUserSchema.extend({
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+export const registerSchema = insertUserSchema
+  .extend({
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z
+      .string()
+      .min(6, "Password must be at least 6 characters"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;

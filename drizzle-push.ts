@@ -1,4 +1,3 @@
-
 import { db } from "./server/db";
 import * as schema from "./shared/schema";
 
@@ -13,14 +12,15 @@ async function main() {
         name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         role TEXT NOT NULL DEFAULT 'employee',
-        department TEXT
+        department TEXT,
+        profile_img TEXT
       );
 
       CREATE TABLE IF NOT EXISTS projects (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
-        deadline TIMESTAMP,
+        deadline TEXT,
         status TEXT DEFAULT 'in_progress',
         manager_id INTEGER NOT NULL,
         FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE CASCADE
@@ -34,7 +34,7 @@ async function main() {
         assignee_id INTEGER,
         status TEXT DEFAULT 'not_started',
         priority TEXT DEFAULT 'medium',
-        due_date TIMESTAMP,
+        due_date TEXT,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
         FOREIGN KEY (assignee_id) REFERENCES users(id) ON DELETE SET NULL
       );
@@ -44,7 +44,7 @@ async function main() {
         user_id INTEGER NOT NULL,
         clock_in TIMESTAMP NOT NULL,
         clock_out TIMESTAMP,
-        total_hours INTEGER,
+        total_hours TEXT,
         break_minutes INTEGER DEFAULT 0,
         notes TEXT,
         status TEXT DEFAULT 'in_progress',
@@ -55,8 +55,8 @@ async function main() {
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
         type TEXT NOT NULL,
-        start_date TIMESTAMP NOT NULL,
-        end_date TIMESTAMP NOT NULL,
+        start_date TEXT NOT NULL,
+        end_date TEXT NOT NULL,
         reason TEXT,
         status TEXT DEFAULT 'pending',
         requested_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

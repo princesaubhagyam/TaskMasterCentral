@@ -74,11 +74,11 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
       await createProject({
         name: values.name,
         description: values.description || "",
-        deadline: values.deadline ? new Date(values.deadline) : null,
+        deadline: values.deadline ? values.deadline : null,
         status: values.status,
         managerId: 0, // This is set automatically by the server based on the logged-in user
       });
-      
+
       form.reset();
       setOpen(false);
     } catch (error) {
@@ -96,7 +96,7 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
             Fill in the details to create a new project.
           </DialogDescription>
         </DialogHeader>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -112,7 +112,7 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="description"
@@ -120,17 +120,17 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Enter project description" 
-                      className="resize-none h-20" 
-                      {...field} 
+                    <Textarea
+                      placeholder="Enter project description"
+                      className="resize-none h-20"
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -143,7 +143,9 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
                         <FormControl>
                           <Button
                             variant={"outline"}
-                            className={`pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
+                            className={`pl-3 text-left font-normal ${
+                              !field.value && "text-muted-foreground"
+                            }`}
                           >
                             {field.value ? (
                               format(field.value, "PPP")
@@ -167,15 +169,15 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -194,7 +196,7 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
                 )}
               />
             </div>
-            
+
             <DialogFooter>
               <Button
                 type="button"

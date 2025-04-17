@@ -21,7 +21,7 @@ export function useProjects() {
       // Ensure deadline is properly formatted as a Date object
       const formattedData = {
         ...projectData,
-        deadline: projectData.deadline ? new Date(projectData.deadline) : null
+        deadline: projectData.deadline ? new Date(projectData.deadline) : null,
       };
       const res = await apiRequest("POST", "/api/projects", formattedData);
       return await res.json();
@@ -47,7 +47,7 @@ export function useProjects() {
       // Ensure deadline is properly formatted as a Date object if present
       const formattedData = {
         ...data,
-        deadline: data.deadline ? new Date(data.deadline) : null
+        deadline: data.deadline ? new Date(data.deadline) : null,
       };
       const res = await apiRequest("PUT", `/api/projects/${id}`, formattedData);
       return await res.json();
@@ -69,7 +69,7 @@ export function useProjects() {
 
   // Get projects by status
   const getProjectsByStatus = (status: string) => {
-    return projects.filter(project => project.status === status);
+    return projects.filter((project) => project.status === status);
   };
 
   // Get upcoming deadlines
@@ -77,15 +77,15 @@ export function useProjects() {
     const today = new Date();
     const twoWeeksLater = new Date();
     twoWeeksLater.setDate(today.getDate() + 14);
-    
+
     return projects
-      .filter(project => {
+      .filter((project) => {
         if (!project.deadline) return false;
-        
+
         const deadlineDate = new Date(project.deadline);
         return (
-          deadlineDate >= today && 
-          deadlineDate <= twoWeeksLater && 
+          deadlineDate >= today &&
+          deadlineDate <= twoWeeksLater &&
           project.status !== "completed"
         );
       })

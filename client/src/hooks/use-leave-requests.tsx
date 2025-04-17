@@ -3,7 +3,7 @@ import { LeaveRequest, InsertLeaveRequest } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-export function useLeaveRequests() {
+export function useLeaveRequests(key: boolean) {
   const { toast } = useToast();
 
   // Get leave requests for the authenticated user
@@ -30,13 +30,19 @@ export function useLeaveRequests() {
       const res = await apiRequest("GET", "/api/leave-requests/all");
       return await res.json();
     },
-    enabled: false, // This query is disabled by default and only enabled for managers/admins
+    enabled: key, // This query is disabled by default and only enabled for managers/admins
   });
 
   // Create a new leave request
   const createLeaveRequestMutation = useMutation({
-    mutationFn: async (leaveRequestData: Omit<InsertLeaveRequest, "userId" | "status">) => {
-      const res = await apiRequest("POST", "/api/leave-requests", leaveRequestData);
+    mutationFn: async (
+      leaveRequestData: Omit<InsertLeaveRequest, "userId" | "status">
+    ) => {
+      const res = await apiRequest(
+        "POST",
+        "/api/leave-requests",
+        leaveRequestData
+      );
       return await res.json();
     },
     onSuccess: () => {
@@ -58,9 +64,13 @@ export function useLeaveRequests() {
   // Cancel a leave request (for employees)
   const cancelLeaveRequestMutation = useMutation({
     mutationFn: async (leaveRequestId: number) => {
-      const res = await apiRequest("PUT", `/api/leave-requests/${leaveRequestId}`, {
-        status: "cancelled",
-      });
+      const res = await apiRequest(
+        "PUT",
+        `/api/leave-requests/${leaveRequestId}`,
+        {
+          status: "cancelled",
+        }
+      );
       return await res.json();
     },
     onSuccess: () => {
@@ -81,19 +91,23 @@ export function useLeaveRequests() {
 
   // Process a leave request (for managers/admins)
   const processLeaveRequestMutation = useMutation({
-    mutationFn: async ({ 
-      leaveRequestId, 
-      status, 
-      comments 
-    }: { 
-      leaveRequestId: number; 
-      status: "approved" | "rejected"; 
+    mutationFn: async ({
+      leaveRequestId,
+      status,
+      comments,
+    }: {
+      leaveRequestId: number;
+      status: "approved" | "rejected";
       comments?: string;
     }) => {
-      const res = await apiRequest("PUT", `/api/leave-requests/${leaveRequestId}`, {
-        status,
-        comments,
-      });
+      const res = await apiRequest(
+        "PUT",
+        `/api/leave-requests/${leaveRequestId}`,
+        {
+          status,
+          comments,
+        }
+      );
       return await res.json();
     },
     onSuccess: (_, variables) => {

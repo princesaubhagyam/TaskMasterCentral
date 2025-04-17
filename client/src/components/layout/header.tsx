@@ -1,10 +1,5 @@
 import { useState } from "react";
-import { 
-  Bell, 
-  CheckCircle, 
-  FileText, 
-  Menu 
-} from "lucide-react";
+import { Bell, CheckCircle, FileText, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -28,22 +23,22 @@ export function Header({ title, openSidebar }: HeaderProps) {
   const isEmployee = user?.role === "employee";
 
   // Mock notifications
-  const [notifications] = useState([
-    {
-      id: 1,
-      title: "New task assigned",
-      time: "15 minutes ago",
-      description: "Update the API documentation for the project",
-      icon: <FileText className="h-5 w-5 text-blue-500" />,
-    },
-    {
-      id: 2,
-      title: "Leave request approved",
-      time: "1 hour ago",
-      description: "Your leave request for June 15-18 has been approved",
-      icon: <CheckCircle className="h-5 w-5 text-green-500" />,
-    },
-  ]);
+  // const [notifications] = useState([
+  //   {
+  //     id: 1,
+  //     title: "New task assigned",
+  //     time: "15 minutes ago",
+  //     description: "Update the API documentation for the project",
+  //     icon: <FileText className="h-5 w-5 text-blue-500" />,
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "Leave request approved",
+  //     time: "1 hour ago",
+  //     description: "Your leave request for June 15-18 has been approved",
+  //     icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+  //   },
+  // ]);
 
   return (
     <header className="bg-white shadow-sm z-10">
@@ -58,9 +53,7 @@ export function Header({ title, openSidebar }: HeaderProps) {
               <Menu className="h-6 w-6" />
             </button>
             <div className="flex-shrink-0 flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">
-                {title}
-              </h1>
+              <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
             </div>
           </div>
           <div className="flex items-center">
@@ -72,7 +65,7 @@ export function Header({ title, openSidebar }: HeaderProps) {
             )}
 
             {/* Notifications dropdown */}
-            <div className="ml-3 relative">
+            {/* <div className="ml-3 relative">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative">
@@ -113,7 +106,7 @@ export function Header({ title, openSidebar }: HeaderProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
+            </div> */}
 
             {/* Profile dropdown */}
             <div className="ml-3 relative">
@@ -126,7 +119,9 @@ export function Header({ title, openSidebar }: HeaderProps) {
                         src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
                         alt="Profile"
                       />
-                      <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
+                      <AvatarFallback>
+                        {user?.name?.charAt(0) || "U"}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
