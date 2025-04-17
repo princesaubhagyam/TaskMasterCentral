@@ -98,8 +98,8 @@ export function Sidebar({ isSidebarOpen, closeSidebar }: SidebarProps) {
           <div className="flex items-center">
             <Avatar className="h-10 w-10 rounded-full">
               <AvatarImage
-                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                alt="Profile"
+                src={user?.profile_img || ""}
+                alt={user?.name || "User"}
               />
               <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
             </Avatar>

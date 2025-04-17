@@ -4,7 +4,12 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { User, LoginData, RegisterData } from "@shared/schema";
+import {
+  User,
+  LoginData,
+  RegisterData,
+  UpdateProfileData,
+} from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -16,6 +21,7 @@ type AuthContextType = {
   loginMutation: UseMutationResult<User, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<User, Error, RegisterData>;
+  updateProfileMutation: UseMutationResult<User, Error, UpdateProfileData>;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -23,7 +29,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
-  
+
   const {
     data: user,
     error,
@@ -44,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Logged in successfully",
         description: `Welcome back, ${user.name}!`,
       });
-      
+
       // Redirect based on role
       if (user.role === "employee") {
         setLocation("/");
@@ -72,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Registration successful",
         description: `Welcome, ${user.name}!`,
       });
-      
+
       // Redirect based on role
       if (user.role === "employee") {
         setLocation("/");
@@ -109,6 +115,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const updateProfileMutation = useMutation({
+    mutationFn: async (updatedProfile: UpdateProfileData) => {
+      const res = await apiRequest("PUT", "/api/user", updatedProfile);
+      return await res.json();
+    },
+    onSuccess: (updatedUser: User) => {
+      queryClient.setQueryData(["/api/user"], updatedUser);
+      toast({
+        title: "Profile updated",
+        description: `Your profile has been successfully updated.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Profile update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <AuthContext.Provider
       value={{
@@ -118,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        updateProfileMutation,
       }}
     >
       {children}

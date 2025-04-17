@@ -6,17 +6,22 @@ import { useTasks } from "@/hooks/use-tasks";
 import { Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 
 export function TaskList() {
-  const { tasks, isLoading, updateTask } = useTasks();
+  const { user } = useAuth();
+  const { tasks, isLoading, updateTask } = useTasks(user?.id ?? null);
   const [updating, setUpdating] = useState<number | null>(null);
+  const [_, navigate] = useLocation();
 
   const handleToggleTask = async (task: Task) => {
     setUpdating(task.id);
     try {
-      const newStatus = task.status === "completed" ? "in_progress" : "completed";
+      const newStatus =
+        task.status === "completed" ? "in_progress" : "completed";
       await updateTask(task.id, { status: newStatus });
-      
+
       toast({
         title: `Task ${newStatus === "completed" ? "completed" : "reopened"}`,
         description: task.title,
@@ -65,26 +70,31 @@ export function TaskList() {
                   className="h-4 w-4 text-blue-500"
                 />
                 <div className="ml-3">
-                  <p className={`text-sm font-medium ${
-                    task.status === "completed" ? "text-gray-400 line-through" : "text-gray-900"
-                  }`}>
+                  <p
+                    className={`text-sm font-medium ${
+                      task.status === "completed"
+                        ? "text-gray-400 line-through"
+                        : "text-gray-900"
+                    }`}
+                  >
                     {task.title}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {task.projectId ? `Project: Project ${task.projectId}` : "Administrative"}
+                    {task.projectId
+                      ? `Project: Project ${task.projectId}`
+                      : "Administrative"}
                   </p>
                 </div>
               </div>
               <div className="flex items-center">
-                <StatusBadge 
-                  status={task.priority} 
-                  className="mr-2"
-                />
+                <StatusBadge status={task.priority || ""} className="mr-2" />
                 {updating === task.id ? (
                   <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
                 ) : (
                   <span className="text-sm text-gray-500">
-                    {task.dueDate ? `Due ${new Date(task.dueDate).toLocaleDateString()}` : 'No due date'}
+                    {task.dueDate
+                      ? `Due ${new Date(task.dueDate).toLocaleDateString()}`
+                      : "No due date"}
                   </span>
                 )}
               </div>
@@ -93,7 +103,11 @@ export function TaskList() {
         ))}
       </ul>
       <div className="px-6 py-4 bg-gray-50">
-        <Button variant="link" className="text-blue-500 hover:text-blue-700 flex items-center gap-1">
+        <Button
+          variant="link"
+          className="text-blue-500 hover:text-blue-700 flex items-center gap-1"
+          onClick={() => navigate("/tasks")}
+        >
           View all tasks <ArrowRight className="h-4 w-4" />
         </Button>
       </div>

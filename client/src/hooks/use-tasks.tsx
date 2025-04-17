@@ -3,7 +3,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Task } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
-export function useTasks() {
+export function useTasks(id: number | null) {
   const { toast } = useToast();
 
   // Get all tasks
@@ -61,13 +61,13 @@ export function useTasks() {
   const getTodayTasks = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    return tasks.filter(task => {
+
+    return tasks.filter((task) => {
       if (!task.dueDate) return false;
-      
+
       const taskDate = new Date(task.dueDate);
       taskDate.setHours(0, 0, 0, 0);
-      
+
       // Tasks due today or past due but not completed
       return (
         (taskDate.getTime() === today.getTime() || taskDate < today) &&

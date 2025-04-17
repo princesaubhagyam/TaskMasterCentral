@@ -124,7 +124,8 @@ export default function ManagerDashboard() {
                     <div className="flex items-center">
                       <Avatar className="h-10 w-10">
                         <AvatarImage
-                          src={`https://api.dicebear.com/6.x/avataaars/svg?seed=${employee.username}`}
+                          src={employee?.profile_img || ""}
+                          alt={employee?.name || "User"}
                         />
                         <AvatarFallback>
                           {employee.name.charAt(0)}

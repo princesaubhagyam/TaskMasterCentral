@@ -4,12 +4,19 @@ import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { storage } from "./storage";
+import { storage as mainStorage } from "./storage";
 import {
   User as SelectUser,
   registerSchema,
   loginSchema,
 } from "@shared/schema";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url); // Get current file URL
+const __dirname = path.dirname(__filename); // Get current directory path
 
 declare global {
   namespace Express {
@@ -33,12 +40,52 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  const uploadDir = path.join(__dirname, "uploads", "profile_images");
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  // Configure multer mainStorage and file validation
+  const storage = multer.diskStorage({
+    destination: (req: any, file: Express.Multer.File, cb: Function) => {
+      cb(null, uploadDir); // Save the files in the profile_images directory
+    },
+    filename: (req: any, file: Express.Multer.File, cb: Function) => {
+      const fileExt = path.extname(file.originalname); // Get file extension
+      const fileName = Date.now() + fileExt; // Use timestamp for a unique file name
+      cb(null, fileName); // Save file with the unique name and extension
+    },
+  });
+
+  // Restrict file types to .png and .jpg
+  const fileFilter: any = (
+    req: Request,
+    file: Express.Multer.File,
+    cb: Function
+  ) => {
+    const allowedMimeTypes = ["image/jpeg", "image/png"];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true); // Accept the file
+    } else {
+      cb(new Error("Only .jpg and .png files are allowed"), false); // Reject the file
+    }
+  };
+
+  // Configure multer with file size limit (optional) and file filter
+  const upload = multer({
+    storage,
+    fileFilter,
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB file size limit
+    },
+  }).single("profile_img");
+
   const sessionSettings: session.SessionOptions = {
     secret:
       process.env.SESSION_SECRET || "project-management-timetracker-secret",
     resave: false,
     saveUninitialized: false,
-    store: storage.sessionStore,
+    store: mainStorage.sessionStore,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       httpOnly: true,
@@ -53,7 +100,7 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        const user = await storage.getUserByUsername(username);
+        const user = await mainStorage.getUserByUsername(username);
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false, { message: "Invalid username or password" });
         }
@@ -67,7 +114,7 @@ export function setupAuth(app: Express) {
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
     try {
-      const user = await storage.getUser(id);
+      const user = await mainStorage.getUser(id);
       done(null, user);
     } catch (error) {
       done(error);
@@ -79,7 +126,7 @@ export function setupAuth(app: Express) {
       // Validate the registration data
       const registerData = registerSchema.parse(req.body);
 
-      const existingUser = await storage.getUserByUsername(
+      const existingUser = await mainStorage.getUserByUsername(
         registerData.username
       );
       if (existingUser) {
@@ -87,7 +134,7 @@ export function setupAuth(app: Express) {
       }
 
       // Create the user with a hashed password
-      const user = await storage.createUser({
+      const user = await mainStorage.createUser({
         username: registerData.username,
         password: await hashPassword(registerData.password),
         name: registerData.name,
@@ -163,5 +210,69 @@ export function setupAuth(app: Express) {
     const { password, ...userWithoutPassword } = req.user!;
 
     res.json(userWithoutPassword);
+  });
+
+  app.post("/api/upload-avatar", upload, (req: any, res: any) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Log the file path for debugging
+      console.log(
+        `File uploaded to: ${path.join(
+          __dirname,
+          "uploads",
+          "profile_images",
+          req.file.filename
+        )}`
+      );
+
+      // Generate the file URL for the uploaded image
+      const fileUrl = `/uploads/profile_images/${req.file.filename}`;
+
+      // Respond with the image URL
+      res.status(200).json({ imageUrl: fileUrl });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Error uploading image" });
+    }
+  });
+
+  app.put("/api/user", async (req, res) => {
+    try {
+      const { name, email, username, department, profile_img, newPassword } =
+        req.body;
+
+      // Check if the username already exists
+      // const existingUser = await mainStorage.getUserByUsername(username);
+      // if (existingUser && existingUser.username !== username) {
+      //   return res.status(400).json({ message: "Username already exists" });
+      // }
+
+      // Prepare the update data
+      const updateData = {
+        name,
+        email,
+        username,
+        department,
+        profile_img,
+        password: newPassword,
+      };
+      if (newPassword) {
+        updateData.password = await hashPassword(newPassword); // Hash the new password
+      }
+
+      // Update user profile in the database
+      const updatedUser = await mainStorage.updateUserProfile(
+        username,
+        updateData
+      );
+
+      res.status(200).json(updatedUser);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Error updating profile" });
+    }
   });
 }

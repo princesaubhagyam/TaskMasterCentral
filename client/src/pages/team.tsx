@@ -119,7 +119,8 @@ export default function Team() {
                     <div className="flex items-center space-x-4">
                       <Avatar className="h-12 w-12">
                         <AvatarImage
-                          src={`https://api.dicebear.com/6.x/avataaars/svg?seed=${employee.username}`}
+                          src={employee?.profile_img || ""}
+                          alt={employee?.name || "User"}
                         />
                         <AvatarFallback>
                           {employee.name.charAt(0)}
@@ -192,7 +193,8 @@ export default function Team() {
             <DialogTitle className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
                 <AvatarImage
-                  src={`https://api.dicebear.com/6.x/avataaars/svg?seed=${selectedEmployee?.username}`}
+                  src={selectedEmployee?.profile_img || ""}
+                  alt={selectedEmployee?.name || "User"}
                 />
                 <AvatarFallback>
                   {selectedEmployee?.name.charAt(0)}
@@ -255,12 +257,14 @@ export default function Team() {
                     {
                       header: "Priority",
                       accessor: (task) => (
-                        <StatusBadge status={task.priority} />
+                        <StatusBadge status={task.priority || ""} />
                       ),
                     },
                     {
                       header: "Status",
-                      accessor: (task) => <StatusBadge status={task.status} />,
+                      accessor: (task) => (
+                        <StatusBadge status={task.status || ""} />
+                      ),
                     },
                     {
                       header: "Due Date",

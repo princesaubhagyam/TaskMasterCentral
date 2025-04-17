@@ -143,6 +143,14 @@ export const registerSchema = insertUserSchema
     message: "Passwords don't match",
     path: ["confirmPassword"],
   });
+export interface UpdateProfileData {
+  name: string;
+  email: string;
+  username: string;
+  department: string;
+  profile_img: string;
+  newPassword: string | null;
+}
 
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
